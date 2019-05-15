@@ -5,5 +5,4 @@ makedocs(sitename="ActivitySpace.jl")
 
 deploydocs(
     repo = "github.com/JohnPalmer/ActivitySpace.jl.git",
-    branch = "master"
 )
