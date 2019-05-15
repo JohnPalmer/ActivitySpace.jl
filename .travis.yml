@@ -30,4 +30,4 @@ deploy:
   github_token: $DOCUMENTER_KEY
   keep_history: true
   on:
-    branch: gh-pages
+    branch: master
