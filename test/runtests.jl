@@ -53,5 +53,4 @@ this_esd = empirical_sampling_distribution(D, group_column=:race, group_a="w", g
 
 @test this_esd isa DataFrame
 @test size(this_esd) == (500, 6)
-@test this_esd.STP
 
