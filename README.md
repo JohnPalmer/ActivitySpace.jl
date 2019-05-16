@@ -6,6 +6,12 @@
 # ActivitySpace.jl
 A Julia package for analyzing mobility, activity spaces, and segregation. 
 
+## Installation
+```
+]
+add https://github.com/JohnPalmer/ActivitySpace.jl
+```
+
 Copyright 2019 John R.B. Palmer
 
 ActivitySpace.jl is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
