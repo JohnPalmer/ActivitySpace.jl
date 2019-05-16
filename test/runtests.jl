@@ -31,12 +31,24 @@ testing_stp = ActivitySpace.stprox(thisA, thisB, f=ActivitySpace.identity)
 @test  testing_stp["b"] == 4(5 + 5 + 10)/6
 
 D = dataset("utica_sim0")
-DP = data_prep(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
-
 @test D isa DataFrame
+
+@test_throws AssertionError data_prep(D, group_column=:doesnotexist, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+@test_throws AssertionError data_prep(D, group_column=:race, group_a="w", group_b="b", X_column=:doesnotexist, Y_column=:Y_UTM18N)
+@test_throws AssertionError data_prep(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:doesnotexist)
+@test_throws AssertionError data_prep(D, group_column=:race, group_a="doesnotexist", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+@test_throws AssertionError data_prep(D, group_column=:race, group_a="w", group_b="doesnotexist", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+
+DP = data_prep(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
 @test DP isa Dict{String,Array{Float64,2}}
 
 this_result = stprox(DP["A"][1:1000,:], DP["B"][1:300,:])
+
+D_small = vcat(D[ D[:race] .== "w", :][1:1000, :], D[ D[:race] .== "b", :][1:300, :] )
+
+this_result2 = stprox(D_small, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+
+@test this_result == this_result2
 
 @test this_result isa Dict{String,Float64}
 @test this_result["Saa"] == 2052.8005715587324
@@ -49,8 +61,27 @@ this_result = stprox(DP["A"][1:1000,:], DP["B"][1:300,:])
 @test this_result["a"] == 5.2936674194953275
 @test this_result["Paa"] == 0.004109710853971436
 
-this_esd = empirical_sampling_distribution(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+@test_throws AssertionError empirical_sampling_distribution(D, group_column=:doesnotexist, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+@test_throws AssertionError empirical_sampling_distribution(D, group_column=:race, group_a="w", group_b="b", X_column=:doesnotexist, Y_column=:Y_UTM18N)
+@test_throws AssertionError empirical_sampling_distribution(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:doesnotexist)
+@test_throws AssertionError empirical_sampling_distribution(D, group_column=:race, group_a="doesnotexist", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+@test_throws AssertionError empirical_sampling_distribution(D, group_column=:race, group_a="w", group_b="doesnotexist", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+@test_throws AssertionError empirical_sampling_distribution(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N, nreps=0)
+@test_throws AssertionError empirical_sampling_distribution(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N, sample_size=0)
 
+this_esd = empirical_sampling_distribution(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
 @test this_esd isa DataFrame
 @test size(this_esd) == (500, 6)
+
+
+
+@test_throws AssertionError check_bias(D, pop_STP=1, group_column=:doesnotexist, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+@test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="w", group_b="b", X_column=:doesnotexist, Y_column=:Y_UTM18N)
+@test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:doesnotexist)
+@test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="doesnotexist", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+@test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="w", group_b="doesnotexist", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+
+@test city_sim_data("doesnotexist") == nothing
+
+@test dataset("doesnotexist") == nothing
 

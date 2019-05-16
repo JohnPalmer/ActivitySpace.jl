@@ -59,12 +59,6 @@ export stprox
 Returns the Spatio-Temporal Proximity Index
 """
 function stprox(A::Array{<:Number, 2}, B::Array{<:Number, 2}; N_a::Int=size(A, 1), N_b::Int=size(B, 1), f::Function=negative_exponential)
-#    if N_a == nothing
-#        N_a = size(A, 1)
-#    end
-#    if N_b == nothing
-#        N_b = size(B, 1)
-#    end
     Nt = N_a + N_b
     n_a = (size(A, 1)^2 - size(A, 1))/2
     n_b = (size(B, 1)^2 - size(B, 1))/2
@@ -81,6 +75,22 @@ function stprox(A::Array{<:Number, 2}, B::Array{<:Number, 2}; N_a::Int=size(A, 1
     return Dict("STP" => STP, "Paa" => Paa, "Pbb" => Pbb, "Ptt" => Ptt, "Saa" => Saa, "Sbb" => Sbb, "Stt" => Stt, "a" => a, "b" => b)
 end
 
+"""
+	stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, N_a::Int=size(A, 1), N_b::Int=size(B, 1), f::Function=negative_exponential)
+
+Returns the Spatio-Temporal Proximity Index
+"""
+function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, N_a::Union{Int, Nothing}=nothing, N_b::Union{Int, Nothing}=nothing, f::Function=negative_exponential)
+	DP = data_prep(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column)
+	if N_a == nothing
+		N_a = size(DP["A"], 1)
+	end
+	if N_b == nothing
+		N_b = size(DP["B"], 1)
+	end
+	return stprox(DP["A"], DP["B"]; N_a=N_a, N_b=N_b, f=f)	
+end
+
 
 export empirical_sampling_distribution
 """
@@ -88,7 +98,14 @@ export empirical_sampling_distribution
 
 Returns a DataFrame containing the empirical sampling distribution for the Spatio-Temporal Proximity Index and its components.
 """
-function empirical_sampling_distribution(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, nreps::Int=500, sample_size::Int=100)
+function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, nreps::Int=500, sample_size::Int=100)
+	@assert nreps > 0
+	@assert sample_size > 0
+	@assert group_column ∈ names(D)
+	@assert X_column ∈ names(D)
+	@assert Y_column ∈ names(D) 
+	@assert size(D[ D[group_column] .== group_a, :],1) > 0
+	@assert size(D[ D[group_column] .== group_b, :],1) > 0
     STP_esd = []
     Paa_esd = []
     Pbb_esd = []
@@ -129,12 +146,20 @@ end
 
 export check_bias
 """
-	check_bias(pop_STP, D, nreps, sample_size)
+	check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential)
 
 Returns a Float containing the difference between the population STP and the mean of the empirical sampling distribution for the given sample size.
 """
-function check_bias(pop_STP, D, nreps, sample_size)
-    pop_STP - mean(empirical_sampling_distribution(D, nreps, sample_size)[1])
+function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential)
+	@assert group_column ∈ names(D)
+	@assert X_column ∈ names(D)
+	@assert Y_column ∈ names(D) 
+	@assert size(D[ D[group_column] .== group_a, :],1) > 0
+	@assert size(D[ D[group_column] .== group_b, :],1) > 0
+	if pop_STP == nothing
+		pop_STP = stprox(D, group_column=group_column, group_a==group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, f=f)
+	end
+    return pop_STP - mean(empirical_sampling_distribution(D, nreps, sample_size)[1])
 end
 
 export data_prep
@@ -143,11 +168,81 @@ export data_prep
 
 """
 function data_prep(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol)
+	@assert group_column ∈ names(D)
+	@assert X_column ∈ names(D)
+	@assert Y_column ∈ names(D) 
+	@assert size(D[ D[group_column] .== group_a, :],1) > 0
+	@assert size(D[ D[group_column] .== group_b, :],1) > 0
     A = [ D[ D[group_column] .== group_a, X_column] D[ D[group_column] .== group_a, Y_column] ]
     B = [ D[D[group_column] .== group_b, X_column] D[ D[group_column] .== group_b, Y_column] ]
     return Dict("A" => A, "B" => B)
 end
 
+export dataset
+"""
+	dataset(dataset_name::AbstractString)
+
+Returns a dataset from the package's data directory.
+
+## Parameters
+
+* `dataset_name` - The name of the dataset (excluding file extension)
+
+## Examples
+Load the Utica simulation dataset:
+```julia
+julia> D  = dataset("utica_sim0")
+```
+"""
+function dataset(dataset_name::AbstractString)
+	basename = joinpath(dirname(@__FILE__), "..", "data")
+	csvname = joinpath(basename, string(dataset_name, ".csv.gz"))
+    if isfile(csvname)
+        return readcsv(csvname)
+    end
+end
+
+
+export city_sim_data
+"""
+	city_sim_data(city::AbstractString="")	
+
+Returns a dataset from a remote location. 
+
+## Parameters
+
+* `city` - The name of the city for which you want simulated data. If left blank or if does not match an available city, the function will print a list of available city names.
+
+## Examples
+Check available datasets:
+```julia
+julia> D  = city_sim_data()
+```
+Load the Utica simulation dataset:
+```julia
+julia> D  = city_sim_data("Utica")
+```
+Load the Buffalo simulation dataset:
+```julia
+julia> D  = city_sim_data("Buffalo")
+```
+"""
+function city_sim_data(city::AbstractString="")	
+	remote_data = Dict("Utica" => "https://zenodo.org/record/2865830/files/utica_sim_full.csv.gz", "Buffalo" => "https://zenodo.org/record/2865830/files/buffalo_sim_full.csv.gz") 
+	if !(city ∈ keys(remote_data))
+		println("Available datasets:") 
+		for k in keys(remote_data)
+			println(k)
+		end
+	else
+		println("Fetching $city data from " * remote_data[city] * ". Please wait...")
+		return readcsv(remote_data[city])
+	end
+end
+
+
+
+#=
 export calculate_bias
 """
 	calculate_bias(D, randomns)
@@ -207,70 +302,6 @@ function rice_correction(a, b, n, h)
     end
     return result
 end
-
-export dataset
-"""
-	dataset(dataset_name::AbstractString)
-
-Returns a dataset from the package's data directory.
-
-## Parameters
-
-* `dataset_name` - The name of the dataset (excluding file extension)
-
-## Examples
-Load the Utica simulation dataset:
-```julia
-julia> D  = dataset("utica_sim0")
-```
-"""
-function dataset(dataset_name::AbstractString)
-	basename = joinpath(dirname(@__FILE__), "..", "data")
-	csvname = joinpath(basename, string(dataset_name, ".csv.gz"))
-    if isfile(csvname)
-        return readcsv(csvname)
-    end
-end
-
-
-export city_sim_data
-"""
-	city_sim_data(city::AbstractString="")	
-
-Returns a dataset from a remote location. 
-
-## Parameters
-
-* `city` - The name of the city for which you want simulated data. If left blank or if does not match an available city, the function will print a list of available city names.
-
-## Examples
-Check available datasets:
-```julia
-julia> D  = city_sim_data()
-```
-Load the Utica simulation dataset:
-```julia
-julia> D  = city_sim_data("Utica")
-```
-Load the Buffalo simulation dataset:
-```julia
-julia> D  = city_sim_data("Buffalo")
-```
-
-"""
-function city_sim_data(city::AbstractString="")	
-	remote_data = Dict("Utica" => "https://zenodo.org/record/2865830/files/utica_sim_full.csv.gz", "Buffalo" => "https://zenodo.org/record/2865830/files/buffalo_sim_full.csv.gz") 
-	if !(city ∈ keys(remote_data))
-		println("Available datasets:") 
-		for k in keys(remote_data)
-			println(k)
-		end
-	else
-		println("Fetching $city data from " * remote_data[city] * ". Please wait...")
-		return readcsv(remote_data[city])
-	end
-end
-
-
+=#
 
 end # module
