@@ -233,4 +233,44 @@ function dataset(dataset_name::AbstractString)
 end
 
 
+export city_sim_data
+"""
+	city_sim_data(city::AbstractString="")	
+
+Returns a dataset from a remote location. 
+
+## Parameters
+
+* `city` - The name of the city for which you want simulated data. If left blank or if does not match an available city, the function will print a list of available city names.
+
+## Examples
+Check available datasets:
+```julia
+julia> D  = city_sim_data()
+```
+Load the Utica simulation dataset:
+```julia
+julia> D  = city_sim_data("Utica")
+```
+Load the Buffalo simulation dataset:
+```julia
+julia> D  = city_sim_data("Buffalo")
+```
+
+"""
+function city_sim_data(city::AbstractString="")	
+	remote_data = Dict("Utica" => "https://zenodo.org/record/2865830/files/utica_sim_full.csv.gz", "Buffalo" => "https://zenodo.org/record/2865830/files/buffalo_sim_full.csv.gz") 
+	if !(city ∈ keys(remote_data))
+		println("Available datasets:") 
+		for k in keys(remote_data)
+			println(k)
+		end
+	else
+		println("Fetching $city data from " * remote_data[city] * ". Please wait...")
+		return readcsv(remote_data[city])
+	end
+end
+
+
+
 end # module
