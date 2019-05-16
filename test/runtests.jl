@@ -12,6 +12,11 @@ using ActivitySpace, Statistics, Test, DataFrames
 @test ActivitySpace.simple_distance(x1 = 1, x2 = 1, y1 = 1, y2 = 1) == 0
 @test ActivitySpace.simple_distance(x1 = 1, x2 = 1, y1 = 1, y2 = 1, f = ActivitySpace.negative_exponential) == 1
 
+@test_throws AssertionError ActivitySpace.simple_distance([1,2], [1,2,3])
+@test_throws AssertionError ActivitySpace.simple_distance([1 2; 1 2], [1,2,3])
+@test_throws AssertionError ActivitySpace.simple_distance([1,2,3], [1 2; 1 2])
+@test ActivitySpace.simple_distance([0, 0, 0], [4, 4, 4]) == sqrt(16*3)
+
 
 thisA = hcat([0, 3], [0, 4])
 thisB = hcat([3, 0], [4, 0])

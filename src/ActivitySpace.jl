@@ -31,6 +31,14 @@ function simple_distance(; x1::Number, x2::Number, y1::Number, y2::Number, f::Fu
     f(sqrt((x1-x2)^2 + (y1-y2)^2))
 end
 
+function simple_distance(X::Array{<:Number}, Y::Array{<:Number}; f::Function=identity)::Float64
+	@assert ndims(X) == 1
+	@assert ndims(Y) == 1
+	@assert length(X) == length(Y)
+    f(sqrt(sum((X .- Y).^2)))
+end
+
+
 """
 	distance_sum(A::Array{<:Number, 2}, B::Union{Array{<:Number, 2}, Nothing}=nothing; f::Function=negative_exponential)::Float64
 
