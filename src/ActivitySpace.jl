@@ -106,7 +106,7 @@ export empirical_sampling_distribution
 
 Returns a DataFrame containing the empirical sampling distribution for the Spatio-Temporal Proximity Index and its components.
 """
-function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, nreps::Int=500, sample_size::Int=100)
+function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, nreps::Int=500, sample_size::Int=100, f::Function=negative_exponential)
 	@assert nreps > 0
 	@assert sample_size > 0
 	@assert group_column ∈ names(D)
@@ -128,7 +128,7 @@ function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, gro
         DP_samp = data_prep(Dsamp, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column)
         Wsamp = DP_samp["A"]
         Bsamp = DP_samp["B"]
-        this_result = stprox(Wsamp, Bsamp, N_a=N_a, N_b=N_b, f=negative_exponential)
+        this_result = stprox(Wsamp, Bsamp, N_a=N_a, N_b=N_b, f=f)
         push!(STP_esd, this_result["STP"])
         push!(Paa_esd, this_result["Paa"])
         push!(Pbb_esd, this_result["Pbb"])
@@ -168,7 +168,7 @@ function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol,
 	if pop_STP == nothing
 		pop_STP = stprox(D, group_column=group_column, group_a==group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, f=f)
 	end
-    return pop_STP - mean(empirical_sampling_distribution(D, nreps, sample_size)[1])
+    return pop_STP - mean(empirical_sampling_distribution(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, f=f, nreps=nreps, sample_size=sample_size)[1])
 end
 
 export data_prep

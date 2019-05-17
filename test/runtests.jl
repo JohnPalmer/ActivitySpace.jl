@@ -86,6 +86,8 @@ this_esd = empirical_sampling_distribution(D, group_column=:race, group_a="w", g
 @test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:doesnotexist)
 @test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="doesnotexist", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
 @test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="w", group_b="doesnotexist", X_column=:X_UTM18N, Y_column=:Y_UTM18N)
+@test abs(check_bias(D, pop_STP=10, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM18N, Y_column=:Y_UTM18N)) > 0 
+
 
 @test city_sim_data("doesnotexist") == nothing
 
@@ -93,3 +95,8 @@ this_esd = empirical_sampling_distribution(D, group_column=:race, group_a="w", g
 
 @test_throws AssertionError randomize_column(D; column_name=:doesnotexist, n=5)
 
+D_shuff = randomize_column(D; column_name=:race, n=5)
+@test size(D_shuff, 1) == size(D, 1)
+@test ndims(D_shuff) == ndims(D)
+@test size(D_shuff[ D_shuff.race.=="w", :], 1) == size(D[ D.race.=="w", :], 1)
+D_shuff.race != D.race 
