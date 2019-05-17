@@ -23,19 +23,19 @@ function identity(x::Number)::Float64
 end
 
 """
-	simple_distance(x1::Number, x2::Number, y1::Number, y2::Number, f::Function)::Float64
+	simple_distance_2d(x1::Number, x2::Number, y1::Number, y2::Number, f::Function)::Float64
 
 Internal method for calculating Euclidean distance between two points defined by ``x1``, ``y1``, and ``x2``, ``y2``. An optional function ``f`` can be added to transform the distance result.
 """
-function simple_distance(; x1::Number, x2::Number, y1::Number, y2::Number, f::Function=identity)::Float64
+function simple_distance_2d(; x1::Number, x2::Number, y1::Number, y2::Number, f::Function=identity)::Float64
     f(sqrt((x1-x2)^2 + (y1-y2)^2))
 end
 
-function simple_distance(X::Array{<:Number}, Y::Array{<:Number}; f::Function=identity)::Float64
-	@assert ndims(X) == 1
-	@assert ndims(Y) == 1
-	@assert length(X) == length(Y)
-    f(sqrt(sum((X .- Y).^2)))
+function simple_distance(; P1::Union{DataFrameRow, DataFrame, Array{<:Number}}, P2::Union{DataFrameRow, DataFrame, Array{<:Number}}, f::Function=identity)::Float64
+	@assert ndims(P1) == 1
+	@assert ndims(P2) == 1
+	@assert length(P1) == length(P2)
+    f(sqrt(sum((P1 .- P2).^2)))
 end
 
 
@@ -44,17 +44,15 @@ end
 
 
 """
-function distance_sum(A::Array{<:Number, 2}, B::Union{Array{<:Number, 2}, Nothing}=nothing; f::Function=negative_exponential)::Float64
+function distance_sum(A::Union{DataFrame, Array{<:Number, 2}}, B::Union{DataFrame, Array{<:Number, 2}, Nothing}=nothing; f::Function=negative_exponential)::Float64
     distance_sum = Float64(0)
-    @assert size(A, 2) == 2
     if B == nothing
         for i in 1:(size(A, 1)-1), j in (i+1):size(A, 1)
-            distance_sum += simple_distance(x1 = A[i, 1], x2 = A[j, 1], y1 = A[i, 2], y2 = A[j, 2], f = f)
+            distance_sum += simple_distance(P1 = A[i, :], P2 = A[j, :], f = f)
         end
     else
-    	@assert size(B, 2) == 2
         for i in 1:size(A, 1), j in 1:size(B, 1)
-            distance_sum += simple_distance(x1 = A[i, 1], x2 = B[j, 1], y1 = A[i, 2], y2 = B[j, 2], f = f)
+            distance_sum += simple_distance(P1 = A[i, :], P2 = B[j, :], f = f)
         end
     end
     return distance_sum
@@ -62,43 +60,51 @@ end
 
 export stprox
 """
-	stprox(A::Array{Float64, 2}, B::Array{Float64, 2}; N_a=nothing, N_b=nothing, f::Function=negative_exponential)
-
-Returns the Spatio-Temporal Proximity Index
-"""
-function stprox(A::Array{<:Number, 2}, B::Array{<:Number, 2}; N_a::Int=size(A, 1), N_b::Int=size(B, 1), f::Function=negative_exponential)
-    Nt = N_a + N_b
-    n_a = (size(A, 1)^2 - size(A, 1))/2
-    n_b = (size(B, 1)^2 - size(B, 1))/2
-    n_t = size(A, 1)*size(B, 1) + n_a + n_b
-    Saa = distance_sum(A, f=f)
-    Sbb = distance_sum(B, f=f)
-    Stt = distance_sum(A, B, f=f) + Saa + Sbb
-    Paa = Saa/n_a
-    Pbb = Sbb/n_b
-    Ptt = Stt/n_t
-    a = N_a * Paa + N_b * Pbb
-    b = Nt * Ptt
-    STP = a/b
-    return Dict("STP" => STP, "Paa" => Paa, "Pbb" => Pbb, "Ptt" => Ptt, "Saa" => Saa, "Sbb" => Sbb, "Stt" => Stt, "a" => a, "b" => b)
-end
-
-"""
 	stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, N_a::Int=size(A, 1), N_b::Int=size(B, 1), f::Function=negative_exponential)
 
 Returns the Spatio-Temporal Proximity Index
 """
-function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, N_a::Union{Int, Nothing}=nothing, N_b::Union{Int, Nothing}=nothing, f::Function=negative_exponential)
-	DP = data_prep(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column)
+function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, N_a::Union{Int, Nothing}=nothing, N_b::Union{Int, Nothing}=nothing, f::Function=negative_exponential, time_approach=1)
+	@assert group_column ∈ names(D)
+	@assert X_column ∈ names(D)
+	@assert Y_column ∈ names(D) 
+	@assert size(D[ D[group_column] .== group_a, :],1) > 0
+	@assert size(D[ D[group_column] .== group_b, :],1) > 0
+
+	times = unique(D[time_column])
 	if N_a == nothing
-		N_a = size(DP["A"], 1)
+		N_a = size(D[ (D[group_column].==group_a) .& (D[time_column] .== times[1]), : ], 1)
 	end
 	if N_b == nothing
-		N_b = size(DP["B"], 1)
+		N_b = size(D[ (D[group_column].==group_b) .& (D[time_column] .== times[1]), : ], 1)
 	end
-	return stprox(DP["A"], DP["B"]; N_a=N_a, N_b=N_b, f=f)	
+	N_t = N_a + N_b
+	Paa = Float64(0)
+	Pbb = Float64(0)
+	Ptt = Float64(0)
+	if time_approach == 1
+	    for t in unique(times)
+	    	A = D[ (D[group_column].==group_a) .& (D[time_column] .== t), [X_column, Y_column] ]	
+	    	B = D[ (D[group_column].==group_b) .& (D[time_column] .== t), [X_column, Y_column]]	
+		    n_a = (size(A, 1)^2 - size(A, 1))/2
+		    n_b = (size(B, 1)^2 - size(B, 1))/2
+		    n_t = size(A, 1)*size(B, 1) + n_a + n_b
+		    Saa = distance_sum(A, f=f)
+		    Sbb = distance_sum(B, f=f)
+		    Stt = distance_sum(A, B, f=f) + Saa + Sbb
+		    Paa += Saa/n_a
+		    Pbb += Sbb/n_b
+		    Ptt += Stt/n_t
+		end
+	end
+	Paa /= length(times)
+	Pbb /= length(times)
+	Ptt /= length(times)
+    a = N_a * Paa + N_b * Pbb
+    b = N_t * Ptt
+    STP = a/b
+    return Dict("STP" => STP, "Paa" => Paa, "Pbb" => Pbb, "Ptt" => Ptt, "a" => a, "b" => b)
 end
-
 
 export empirical_sampling_distribution
 """
@@ -106,12 +112,13 @@ export empirical_sampling_distribution
 
 Returns a DataFrame containing the empirical sampling distribution for the Spatio-Temporal Proximity Index and its components.
 """
-function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, nreps::Int=500, sample_size::Int=100, f::Function=negative_exponential)
+function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, nreps::Int=500, sample_size::Int=100, f::Function=negative_exponential)
 	@assert nreps > 0
 	@assert sample_size > 0
 	@assert group_column ∈ names(D)
 	@assert X_column ∈ names(D)
 	@assert Y_column ∈ names(D) 
+	@assert time_column ∈ names(D) 
 	@assert size(D[ D[group_column] .== group_a, :],1) > 0
 	@assert size(D[ D[group_column] .== group_b, :],1) > 0
     STP_esd = []
@@ -120,15 +127,12 @@ function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, gro
     Ptt_esd = []
     a_esd = []
     b_esd = []
-    DP = data_prep(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column)
-    N_a = size(DP["A"], 2)
-    N_b = size(DP["B"], 2)
-    for i in 1:nreps
+ 	times = unique(D[time_column])
+	N_a = size(D[ (D[group_column].==group_a) .& (D[time_column] .== times[1]), :], 1)
+	N_b = size(D[ (D[group_column].==group_b) .& (D[time_column] .== times[1]), :], 1)
+	for i in 1:nreps
         Dsamp = D[rand(1:size(D,1), sample_size), :]
-        DP_samp = data_prep(Dsamp, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column)
-        Wsamp = DP_samp["A"]
-        Bsamp = DP_samp["B"]
-        this_result = stprox(Wsamp, Bsamp, N_a=N_a, N_b=N_b, f=f)
+        this_result = stprox(Dsamp, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column = Y_column, time_column=time_column, N_a=N_a, N_b=N_b, f=f)
         push!(STP_esd, this_result["STP"])
         push!(Paa_esd, this_result["Paa"])
         push!(Pbb_esd, this_result["Pbb"])
@@ -159,32 +163,16 @@ export check_bias
 
 Returns a Float containing the difference between the population STP and the mean of the empirical sampling distribution for the given sample size.
 """
-function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential)
+function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential)
 	@assert group_column ∈ names(D)
 	@assert X_column ∈ names(D)
 	@assert Y_column ∈ names(D) 
 	@assert size(D[ D[group_column] .== group_a, :],1) > 0
 	@assert size(D[ D[group_column] .== group_b, :],1) > 0
 	if pop_STP == nothing
-		pop_STP = stprox(D, group_column=group_column, group_a==group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, f=f)
+		pop_STP = stprox(D, group_column=group_column, group_a==group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, f=f)
 	end
-    return pop_STP - mean(empirical_sampling_distribution(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, f=f, nreps=nreps, sample_size=sample_size)[1])
-end
-
-export data_prep
-"""
-	data_prep(D)
-
-"""
-function data_prep(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol)
-	@assert group_column ∈ names(D)
-	@assert X_column ∈ names(D)
-	@assert Y_column ∈ names(D) 
-	@assert size(D[ D[group_column] .== group_a, :],1) > 0
-	@assert size(D[ D[group_column] .== group_b, :],1) > 0
-    A = [ D[ D[group_column] .== group_a, X_column] D[ D[group_column] .== group_a, Y_column] ]
-    B = [ D[D[group_column] .== group_b, X_column] D[ D[group_column] .== group_b, Y_column] ]
-    return Dict("A" => A, "B" => B)
+    return pop_STP - mean(empirical_sampling_distribution(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, f=f, nreps=nreps, sample_size=sample_size)[1])
 end
 
 export dataset
