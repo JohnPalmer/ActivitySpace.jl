@@ -248,8 +248,8 @@ function city_sim_data(city::AbstractString="")
 		println("Fetching $city data from " * remote_data[city] * ". Please wait...")
 		D = readcsv(remote_data[city])
 		if size(D, 2) == 1
-			println("Zenodo data archives appears to be down. Trying to fetch from Google Drive instead")
-			D = readcsv_alt1(remote_data[city])
+			println("Zenodo data archives appears to be down. Trying to fetch from Google Drive instead...")
+			D = readcsv(remote_data_alt1[city])
 		end
 		return D
 	end

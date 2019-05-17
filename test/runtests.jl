@@ -90,6 +90,8 @@ this_esd = empirical_sampling_distribution(D, group_column=:race, group_a="w", g
 
 
 @test city_sim_data("doesnotexist") == nothing
+@test size(city_sim_data("Utica"), 2) > 1
+
 
 @test dataset("doesnotexist") == nothing
 
