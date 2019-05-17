@@ -1,7 +1,7 @@
 name = "ActivitySpace"
 uuid = "682e7260-76a3-11e9-006e-91ad24b2772c"
 authors = ["John Palmer <johnrbpalmer@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"

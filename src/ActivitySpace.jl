@@ -139,16 +139,17 @@ function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, gro
     return DataFrame(STP = STP_esd, Paa = Paa_esd, Pbb = Pbb_esd, Ptt = Ptt_esd, a = a_esd, b = b_esd)
 end
 
-export randomize_race
+export randomize_column
 """
-	randomize_race(D, rand_size)
+	randomize_column(D::DataFrame; column_name::Symbol, n::Int)
 
-Returns a DataFrame in which rand_size elements of the race column have been shuffled.
+Returns a DataFrame in which n elements of the indicated column have been shuffled.
 """
-function randomize_race(D, rand_size)
+function randomize_column(D::DataFrame; column_name::Symbol, n::Int)
+	@assert column_name ∈ names(D)
     D_shuffled = D[randperm(size(D,1)),:]
-    D_shuffled.race_random = vcat(shuffle(D_shuffled.race[1:rand_size]),  D_shuffled.race[(rand_size+1):size(D_shuffled,1)])
-    D_shuffled.race = D_shuffled.race_random
+    column_shuffled = vcat(shuffle(D_shuffled[1:n, column_name]),  D_shuffled[(n+1):size(D_shuffled,1), column_name])
+    D_shuffled[column_name] = column_shuffled
     return D_shuffled
 end
 

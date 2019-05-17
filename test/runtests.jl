@@ -18,6 +18,7 @@ using ActivitySpace, Statistics, Test, DataFrames
 @test ActivitySpace.simple_distance([0, 0, 0], [4, 4, 4]) == sqrt(16*3)
 
 
+
 thisA = hcat([0, 3], [0, 4])
 thisB = hcat([3, 0], [4, 0])
 
@@ -89,4 +90,6 @@ this_esd = empirical_sampling_distribution(D, group_column=:race, group_a="w", g
 @test city_sim_data("doesnotexist") == nothing
 
 @test dataset("doesnotexist") == nothing
+
+@test_throws AssertionError randomize_column(D; column_name=:doesnotexist, n=5)
 
