@@ -238,6 +238,7 @@ julia> D  = city_sim_data("Buffalo")
 """
 function city_sim_data(city::AbstractString="")	
 	remote_data = Dict("Utica" => "https://zenodo.org/record/2865830/files/utica_sim_full.csv.gz", "Buffalo" => "https://zenodo.org/record/2865830/files/buffalo_sim_full.csv.gz") 
+	remote_data_alt1 = Dict("Utica" => "https://drive.google.com/uc?export=download&id=13VMKjAIloyEQHBz8LMQqHhgCnv7clFum", "Buffalo" => "https://drive.google.com/uc?export=download&id=13X01yDEt6y99pPbDJz_-hY3nYdCRYbrx")
 	if !(city ∈ keys(remote_data))
 		println("Available datasets:") 
 		for k in keys(remote_data)
@@ -245,7 +246,12 @@ function city_sim_data(city::AbstractString="")
 		end
 	else
 		println("Fetching $city data from " * remote_data[city] * ". Please wait...")
-		return readcsv(remote_data[city])
+		D = readcsv(remote_data[city])
+		if size(D, 2) == 1
+			println("Zenodo data archives appears to be down. Trying to fetch from Google Drive instead")
+			D = readcsv_alt1(remote_data[city])
+		end
+		return D
 	end
 end
 
