@@ -7,8 +7,7 @@ A Julia package for analyzing mobility, activity spaces, and segregation. This p
 
 ## Installation
 ```julia
-using Pkg
-Pkg.add("https://github.com/JohnPalmer/ActivitySpace.jl")
+(v1.1) pkg> https://github.com/JohnPalmer/ActivitySpace.jl
 ```
 
 Copyright 2019 John R.B. Palmer
