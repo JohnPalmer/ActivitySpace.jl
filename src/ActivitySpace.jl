@@ -25,12 +25,12 @@ end
 
 Internal method for calculating Euclidean distance between two points defined by ``x1``, ``y1``, and ``x2``, ``y2``. An optional function ``f`` can be added to transform the distance result.
 """
-function simple_distance_2d(; x1::Float64, x2::Float64, y1::Float64, y2::Float64, f::Function=identity)::Float64
+function simple_distance_2d(x1::Float64, x2::Float64, y1::Float64, y2::Float64, f::Function=identity)::Float64
     f(sqrt((x1-x2)^2 + (y1-y2)^2))
 end
 
 # rethinking this one given time issues
-function simple_distance(; P1::Array{<:Number, 1}, P2::Array{<:Number, 1}, f::Function=identity)::Float64
+function simple_distance(P1::Array{<:Number, 1}, P2::Array{<:Number, 1}, f::Function=identity)::Float64
     f(sqrt(sum((P1 .- P2).^2)))
 end
 
@@ -40,21 +40,21 @@ end
 
 
 """
-function distance_sum(A::Array{Float64, 2}; f::Function=negative_exponential)::Float64
+function distance_sum(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
     nrowA::Int64 = size(A, 1)
     for i in 1:(nrowA-1), j in (i+1):nrowA
-        this_distance_sum += simple_distance_2d(x1 = A[i, 1], x2 = A[j, 1], y1 = A[i, 2], y2 = A[j, 2], f = f)
+        this_distance_sum += simple_distance_2d(A[i, 1], A[j, 1], A[i, 2], A[j, 2], f)
     end
     return this_distance_sum
 end
 
-function distance_sum(A::Array{Float64, 2}, B::Array{Float64, 2}; f::Function=negative_exponential)::Float64
+function distance_sum(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
     nrowA::Int64 = size(A, 1)
     nrowB::Int64 = size(B, 1)
     for i in 1:nrowA, j in 1:nrowB
-        this_distance_sum += simple_distance_2d(x1 = A[i, 1], x2 = B[j, 1], y1 = A[i, 2], y2 = B[j, 2], f = f)
+        this_distance_sum += simple_distance_2d(A[i, 1], B[j, 1], A[i, 2], B[j, 2], f)
     end
     return this_distance_sum
 end
@@ -91,9 +91,9 @@ function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::
 		    n_a = (size(A, 1)^2 - size(A, 1))/2
 		    n_b = (size(B, 1)^2 - size(B, 1))/2
 		    n_t = size(A, 1)*size(B, 1) + n_a + n_b
-		    Saa = distance_sum(A, f=f)
-		    Sbb = distance_sum(B, f=f)
-		    Stt = distance_sum(A, B, f=f) + Saa + Sbb
+		    Saa = distance_sum(A, f)
+		    Sbb = distance_sum(B, f)
+		    Stt = distance_sum(A, B, f) + Saa + Sbb
 		    Paa += Saa/n_a
 		    Pbb += Sbb/n_b
 		    Ptt += Stt/n_t
