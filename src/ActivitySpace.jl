@@ -42,7 +42,7 @@ end
 """
 function distance_sum(A::Array{Float64, 2}; f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
-    nrowA::UInt64 = size(A, 1)
+    nrowA::Int64 = size(A, 1)
     for i in 1:(nrowA-1), j in (i+1):nrowA
         this_distance_sum += simple_distance_2d(x1 = A[i, 1], x2 = A[j, 1], y1 = A[i, 2], y2 = A[j, 2], f = f)
     end
@@ -51,8 +51,8 @@ end
 
 function distance_sum(A::Array{Float64, 2}, B::Array{Float64, 2}; f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
-    nrowA::UInt64 = size(A, 1)
-    nrowB::UInt64 = size(B, 1)
+    nrowA::Int64 = size(A, 1)
+    nrowB::Int64 = size(B, 1)
     for i in 1:nrowA, j in 1:nrowB
         this_distance_sum += simple_distance_2d(x1 = A[i, 1], x2 = B[j, 1], y1 = A[i, 2], y2 = B[j, 2], f = f)
     end
