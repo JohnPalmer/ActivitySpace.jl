@@ -7,8 +7,7 @@ using DataFrames, Statistics, Random, TableReader
 
 Internal method for calculating negative exponential function. Since this is intended for use in distance calculations, ``x`` must be a positive, single value. The function returns ``e^{-x}``.
 """
-function negative_exponential(x::Number)::Float64
-	@assert x >= 0
+function negative_exponential(x::Float64)::Float64
     exp(-x)
 end
 
@@ -17,8 +16,7 @@ end
 
 Internal method for calculating identity function. Since this is intended for use in distance calculations, ``x`` must be a positive, single value. The function simply returns ``x``.
 """
-function identity(x::Number)::Float64
-	@assert x >= 0
+function identity(x::Float64)::Float64
     x
 end
 
@@ -27,14 +25,12 @@ end
 
 Internal method for calculating Euclidean distance between two points defined by ``x1``, ``y1``, and ``x2``, ``y2``. An optional function ``f`` can be added to transform the distance result.
 """
-function simple_distance_2d(; x1::Number, x2::Number, y1::Number, y2::Number, f::Function=identity)::Float64
+function simple_distance_2d(; x1::Float64, x2::Float64, y1::Float64, y2::Float64, f::Function=identity)::Float64
     f(sqrt((x1-x2)^2 + (y1-y2)^2))
 end
 
-function simple_distance(; P1::Union{DataFrameRow, DataFrame, Array{<:Number}}, P2::Union{DataFrameRow, DataFrame, Array{<:Number}}, f::Function=identity)::Float64
-	@assert ndims(P1) == 1
-	@assert ndims(P2) == 1
-	@assert length(P1) == length(P2)
+# rethinking this one given time issues
+function simple_distance(; P1::Array{<:Number, 1}, P2::Array{<:Number, 1}, f::Function=identity)::Float64
     f(sqrt(sum((P1 .- P2).^2)))
 end
 
@@ -44,19 +40,25 @@ end
 
 
 """
-function distance_sum(A::Union{DataFrame, Array{<:Number, 2}}, B::Union{DataFrame, Array{<:Number, 2}, Nothing}=nothing; f::Function=negative_exponential)::Float64
-    distance_sum = Float64(0)
-    if B == nothing
-        for i in 1:(size(A, 1)-1), j in (i+1):size(A, 1)
-            distance_sum += simple_distance(P1 = A[i, :], P2 = A[j, :], f = f)
-        end
-    else
-        for i in 1:size(A, 1), j in 1:size(B, 1)
-            distance_sum += simple_distance(P1 = A[i, :], P2 = B[j, :], f = f)
-        end
+function distance_sum(A::Array{Float64, 2}; f::Function=negative_exponential)::Float64
+    this_distance_sum = Float64(0)
+    nrowA::UInt64 = size(A, 1)
+    for i in 1:(nrowA-1), j in (i+1):nrowA
+        this_distance_sum += simple_distance_2d(x1 = A[i, 1], x2 = A[j, 1], y1 = A[i, 2], y2 = A[j, 2], f = f)
     end
-    return distance_sum
+    return this_distance_sum
 end
+
+function distance_sum(A::Array{Float64, 2}, B::Array{Float64, 2}; f::Function=negative_exponential)::Float64
+    this_distance_sum = Float64(0)
+    nrowA::UInt64 = size(A, 1)
+    nrowB::UInt64 = size(B, 1)
+    for i in 1:nrowA, j in 1:nrowB
+        this_distance_sum += simple_distance_2d(x1 = A[i, 1], x2 = B[j, 1], y1 = A[i, 2], y2 = B[j, 2], f = f)
+    end
+    return this_distance_sum
+end
+
 
 export stprox
 """
@@ -84,8 +86,8 @@ function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::
 	Ptt = Float64(0)
 	if time_approach == 1
 	    for t in unique(times)
-	    	A = D[ (D[group_column].==group_a) .& (D[time_column] .== t), [X_column, Y_column] ]	
-	    	B = D[ (D[group_column].==group_b) .& (D[time_column] .== t), [X_column, Y_column]]	
+	    	A = convert(Matrix, D[ (D[group_column].==group_a) .& (D[time_column] .== t), [X_column, Y_column] ])	
+	    	B = convert(Matrix, D[ (D[group_column].==group_b) .& (D[time_column] .== t), [X_column, Y_column]])	
 		    n_a = (size(A, 1)^2 - size(A, 1))/2
 		    n_b = (size(B, 1)^2 - size(B, 1))/2
 		    n_t = size(A, 1)*size(B, 1) + n_a + n_b
@@ -112,7 +114,7 @@ export empirical_sampling_distribution
 
 Returns a DataFrame containing the empirical sampling distribution for the Spatio-Temporal Proximity Index and its components.
 """
-function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, nreps::Int=500, sample_size::Int=100, f::Function=negative_exponential)
+function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol=:time, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, f::Function=negative_exponential)::DataFrame
 	@assert nreps > 0
 	@assert sample_size > 0
 	@assert group_column ∈ names(D)
@@ -121,17 +123,20 @@ function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, gro
 	@assert time_column ∈ names(D) 
 	@assert size(D[ D[group_column] .== group_a, :],1) > 0
 	@assert size(D[ D[group_column] .== group_b, :],1) > 0
-    STP_esd = []
-    Paa_esd = []
-    Pbb_esd = []
-    Ptt_esd = []
-    a_esd = []
-    b_esd = []
+    STP_esd::Array{Float64} = []
+    Paa_esd::Array{Float64} = []
+    Pbb_esd::Array{Float64} = []
+    Ptt_esd::Array{Float64} = []
+    a_esd::Array{Float64} = []
+    b_esd::Array{Float64} = []
  	times = unique(D[time_column])
-	N_a = size(D[ (D[group_column].==group_a) .& (D[time_column] .== times[1]), :], 1)
-	N_b = size(D[ (D[group_column].==group_b) .& (D[time_column] .== times[1]), :], 1)
+	IDs = unique(D[ID_column])
+	@assert sample_size <= length(IDs)
+	N_a::Int64 = size(D[ (D[group_column].==group_a) .& (D[time_column] .== times[1]), :], 1)
+	N_b::Int64 = size(D[ (D[group_column].==group_b) .& (D[time_column] .== times[1]), :], 1)
 	for i in 1:nreps
-        Dsamp = D[rand(1:size(D,1), sample_size), :]
+		these_IDs = rand(IDs, sample_size)
+        Dsamp = D[ indexin(D[ID_column], these_IDs) .!= nothing, :]
         this_result = stprox(Dsamp, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column = Y_column, time_column=time_column, N_a=N_a, N_b=N_b, f=f)
         push!(STP_esd, this_result["STP"])
         push!(Paa_esd, this_result["Paa"])
