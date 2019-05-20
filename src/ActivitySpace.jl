@@ -2,8 +2,9 @@ module ActivitySpace
 
 using DataFrames, Statistics, Random, TableReader
 
+export negative_exponential
 """
-	negative_exponential(x::Number)::Float64
+	negative_exponential(x::Float64)::Float64
 
 Internal method for calculating negative exponential function. Since this is intended for use in distance calculations, ``x`` must be a positive, single value. The function returns ``e^{-x}``.
 """

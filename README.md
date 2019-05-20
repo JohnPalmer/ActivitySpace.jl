@@ -19,7 +19,10 @@ D = dataset("utica_sim0")
 
 utica_stp = stprox(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
 
-utica_stp_esd = 
+utica_stp_esd = empirical_sampling_distribution(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time, ID_column=:ID, nreps=500, sample_size=300)
+
+utica_stp_bias = check_bias(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time, ID_column=:ID, nreps=500, sample_size=300)
+
 ```
 
 ## About
