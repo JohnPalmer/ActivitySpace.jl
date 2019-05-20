@@ -6,16 +6,17 @@ export negative_exponential
 """
 	negative_exponential(x::Float64)::Float64
 
-Internal method for calculating negative exponential function. Since this is intended for use in distance calculations, ``x`` must be a positive, single value. The function returns ``e^{-x}``.
+Returns ``e^{-x}``.
 """
 function negative_exponential(x::Float64)::Float64
     exp(-x)
 end
 
 """
-	distance_sum(A::Array{<:Number, 2}, B::Union{Array{<:Number, 2}, Nothing}=nothing; f::Function=negative_exponential)::Float64
+	distance_sum(A::Array{Float64, 2},
+	    f::Function=negative_exponential)::Float64
 
-
+Internal function for summing distances between all points represented in a matrix with 2 columns containing the X and Y coordinates. The distances are transformed by whatever function is supplied in the call. 
 """
 function distance_sum(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
@@ -26,6 +27,14 @@ function distance_sum(A::Array{Float64, 2}, f::Function=negative_exponential)::F
     return this_distance_sum
 end
 
+
+"""
+	distance_sum(A::Array{Float64, 2}, 
+	    B::Array{Float64, 2}, 
+	    f::Function=negative_exponential)::Float64
+
+Internal function for summing distances between two sets of points, each represented in a matrix with 2 columns (X and Y coordinates). The distances are transformed by whatever function is supplied in the call. 
+"""
 function distance_sum(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
     nrowA::Int64 = size(A, 1)
@@ -39,7 +48,16 @@ end
 
 export stprox
 """
-	stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, N_a::Int=size(A, 1), N_b::Int=size(B, 1), f::Function=negative_exponential)
+	stprox(D::DataFrame; 
+	    group_column::Symbol, 
+	    group_a, group_b, 
+	    X_column::Symbol, 
+	    Y_column::Symbol, 
+	    time_column::Symbol, 
+	    N_a::Union{Int, Nothing}=nothing, 
+	    N_b::Union{Int, Nothing}=nothing, 
+	    f::Function=negative_exponential, 
+	    time_approach=1)
 
 Returns the Spatio-Temporal Proximity Index
 """
@@ -87,7 +105,17 @@ end
 
 export empirical_sampling_distribution
 """
-	empirical_sampling_distribution(D, nreps, sample_size)
+	empirical_sampling_distribution(D::DataFrame; 
+	    group_column::Symbol, 
+	    group_a, 
+	    group_b, 
+	    X_column::Symbol, 
+	    Y_column::Symbol, 
+	    time_column::Symbol=:time, 
+	    ID_column::Symbol=:ID, 
+	    nreps::Int=500, 
+	    sample_size::Int=100, 
+	    f::Function=negative_exponential)::DataFrame
 
 Returns a DataFrame containing the empirical sampling distribution for the Spatio-Temporal Proximity Index and its components.
 """
@@ -127,7 +155,9 @@ end
 
 export randomize_column
 """
-	randomize_column(D::DataFrame; column_name::Symbol, n::Int)
+	randomize_column(D::DataFrame; 
+	    column_name::Symbol, 
+	    n::Int)
 
 Returns a DataFrame in which n elements of the indicated column have been shuffled.
 """
@@ -141,9 +171,20 @@ end
 
 export check_bias
 """
-	check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential)
+	check_bias(D; 
+	    group_column::Symbol, 
+	    group_a, 
+	    group_b, 
+	    X_column::Symbol, 
+	    Y_column::Symbol, 
+	    time_column::Symbol, 
+	    ID_column::Symbol=:ID, 
+	    nreps::Int=500, 
+	    sample_size::Int=100, 
+	    pop_STP::Union{Number, Nothing}=nothing, 
+	    f::Function=negative_exponential)
 
-Returns a Float containing the difference between the population STP and the mean of the empirical sampling distribution for the given sample size.
+Convenience function that calculates the difference between the mean of the empirical sampling distribution and the population STP value. Returns this difference (the estimator bias), along with the STP value, the full empirical sampling distribution, and information about the data. If the STP value is supplied in the function call, then it will not be calculated (thus saving processing time).
 """
 function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential)
 	@assert group_column ∈ names(D)
