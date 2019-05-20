@@ -5,40 +5,14 @@ using ActivitySpace, Statistics, Test, DataFrames
 @test ActivitySpace.negative_exponential(1.0) == exp(-1.0)
 # @test_throws AssertionError ActivitySpace.negative_exponential(-1)
 
-@test ActivitySpace.identity(100.0) == 100.0
-@test typeof(ActivitySpace.identity(100.0)) == Float64
-# @test_throws AssertionError ActivitySpace.identity(-1)
 
-@test ActivitySpace.simple_distance_2d(1.0, 1.0, 1.0, 1.0) == 0.0
-@test ActivitySpace.simple_distance_2d(1.0, 1.0, 1.0, 1.0, ActivitySpace.negative_exponential) == 1.0
+thisA = convert(Matrix, DataFrame(X=[0.0, 3.0], Y=[0.0, 4.0]))
+thisB = convert(Matrix, DataFrame(X=[3.0, 0.0], Y=[4.0, 0.0]))
 
-# @test_throws AssertionError ActivitySpace.simple_distance(P1 = [1,2],  P2= [1,2,3])
-# @test_throws AssertionError ActivitySpace.simple_distance(P1 = [1 2; 1 2], P2 = [1,2,3])
-# @test_throws AssertionError ActivitySpace.simple_distance(P1 = [1,2,3], P2 = [1 2; 1 2])
-@test ActivitySpace.simple_distance([0, 0, 0], [4, 4, 4]) == sqrt(16*3)
-
-
-
-thisA = convert(Matrix, DataFrame(X=[0.0, 3.0], Y=[0.0, 4.0], t=1, race="w",))
-thisB = convert(Matrix, DataFrame(X=[3.0, 0.0], Y=[4.0, 0.0], t=1, race="b",))
-
-@test ActivitySpace.simple_distance_2d(thisA[1,1], thisA[2,1], thisA[1,2], thisA[2,2]) == 5.0
-
-# @test ActivitySpace.distance_sum(thisA[:, [:X, :Y]]) == exp(-5)
-# @test ActivitySpace.distance_sum(thisA[:, [:X, :Y, :t]]) == exp(-5)
-# @test ActivitySpace.distance_sum(thisA, f = ActivitySpace.identity) == 5
-# @test ActivitySpace.distance_sum(thisA, thisB) == exp(-5) + exp(0) + exp(0) + exp(-5)
-# @test ActivitySpace.distance_sum(thisA, thisB, f = ActivitySpace.identity) == 10
-
-# TinyD = DataFrame(vcat(thisA, thisB))
-# TinyD.time = 1
-
-# testing_stp = ActivitySpace.stprox(thisA, thisB, f=ActivitySpace.identity)
-# @test  testing_stp["Paa"] == 5
-# @test  testing_stp["Pbb"] == 5
-# @test  testing_stp["Ptt"] == (5 + 5 + 10)/6
-# @test  testing_stp["a"] == 2*5 + 2*5
-# @test  testing_stp["b"] == 4(5 + 5 + 10)/6
+@test ActivitySpace.distance_sum(thisA) == exp(-5)
+@test ActivitySpace.distance_sum(thisA, ActivitySpace.identity) == 5
+@test ActivitySpace.distance_sum(thisA, thisB) == exp(-5) + exp(0) + exp(0) + exp(-5)
+@test ActivitySpace.distance_sum(thisA, thisB, ActivitySpace.identity) == 10
 
 D = dataset("utica_sim0")
 @test D isa DataFrame

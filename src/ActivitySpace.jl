@@ -12,30 +12,6 @@ function negative_exponential(x::Float64)::Float64
 end
 
 """
-	identity(x::Number)::Float64
-
-Internal method for calculating identity function. Since this is intended for use in distance calculations, ``x`` must be a positive, single value. The function simply returns ``x``.
-"""
-function identity(x::Float64)::Float64
-    x
-end
-
-"""
-	simple_distance_2d(x1::Number, x2::Number, y1::Number, y2::Number, f::Function)::Float64
-
-Internal method for calculating Euclidean distance between two points defined by ``x1``, ``y1``, and ``x2``, ``y2``. An optional function ``f`` can be added to transform the distance result.
-"""
-function simple_distance_2d(x1::Float64, x2::Float64, y1::Float64, y2::Float64, f::Function=identity)::Float64
-    f(sqrt((x1-x2)^2 + (y1-y2)^2))
-end
-
-# rethinking this one given time issues
-function simple_distance(P1::Array{<:Number, 1}, P2::Array{<:Number, 1}, f::Function=identity)::Float64
-    f(sqrt(sum((P1 .- P2).^2)))
-end
-
-
-"""
 	distance_sum(A::Array{<:Number, 2}, B::Union{Array{<:Number, 2}, Nothing}=nothing; f::Function=negative_exponential)::Float64
 
 
@@ -44,7 +20,7 @@ function distance_sum(A::Array{Float64, 2}, f::Function=negative_exponential)::F
     this_distance_sum = Float64(0)
     nrowA::Int64 = size(A, 1)
     for i in 1:(nrowA-1), j in (i+1):nrowA
-        this_distance_sum += simple_distance_2d(A[i, 1], A[j, 1], A[i, 2], A[j, 2], f)
+        this_distance_sum += f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2))
     end
     return this_distance_sum
 end
@@ -54,7 +30,7 @@ function distance_sum(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=ne
     nrowA::Int64 = size(A, 1)
     nrowB::Int64 = size(B, 1)
     for i in 1:nrowA, j in 1:nrowB
-        this_distance_sum += simple_distance_2d(A[i, 1], B[j, 1], A[i, 2], B[j, 2], f)
+        this_distance_sum += f(sqrt((A[i, 1]-B[j, 1])^2 + (A[i, 2]-B[j, 2])^2))
     end
     return this_distance_sum
 end
@@ -85,7 +61,7 @@ function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::
 	Pbb = Float64(0)
 	Ptt = Float64(0)
 	if time_approach == 1
-	    for t in unique(times)
+	    for t in times
 	    	A = convert(Matrix, D[ (D[group_column].==group_a) .& (D[time_column] .== t), [X_column, Y_column] ])	
 	    	B = convert(Matrix, D[ (D[group_column].==group_b) .& (D[time_column] .== t), [X_column, Y_column]])	
 		    n_a = (size(A, 1)^2 - size(A, 1))/2
