@@ -10,6 +10,20 @@ A Julia package for analyzing mobility, activity spaces, and segregation. This p
 (v1.1) pkg> add https://github.com/JohnPalmer/ActivitySpace.jl
 ```
 
+## Usage
+
+```julia
+using ActivitySpace
+
+D = dataset("utica_sim0")
+
+utica_stp = stprox(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
+
+utica_stp_esd = 
+```
+
+## About
+
 Copyright 2019 John R.B. Palmer
 
 ActivitySpace.jl is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.

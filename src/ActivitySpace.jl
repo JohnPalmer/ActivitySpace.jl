@@ -154,7 +154,8 @@ function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol,
 		pop_STP = stprox(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, f=f)
 	end
 	esd = empirical_sampling_distribution(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, ID_column=ID_column, f=f, nreps=nreps, sample_size=sample_size)
-    return Dict("bias" => mean(esd.STP)-pop_STP, "pop_STP" => pop_STP, "esd" => esd, "sample_size" => sample_size, "nreps" => nreps, "data" => D, "group_column" => string(group_column), "group_a" => group_a, "group_b" => group_b, "ID_column" => string(ID_column), "time_column" => string(time_column), "f" => string(f))
+	this_bias = mean(esd.STP)-pop_STP["STP"]
+    return Dict("bias" => this_bias, "pop_STP" => pop_STP, "esd" => esd, "sample_size" => sample_size, "nreps" => nreps, "data" => D, "group_column" => string(group_column), "group_a" => group_a, "group_b" => group_b, "ID_column" => string(ID_column), "time_column" => string(time_column), "f" => string(f))
 end
 
 export dataset
