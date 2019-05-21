@@ -47,7 +47,8 @@ this_esd = empirical_sampling_distribution(D, group_column=:race, group_a="w", g
 @test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:doesnotexist, time_column=:time)
 @test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="doesnotexist", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
 @test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="w", group_b="doesnotexist", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
-@test abs(check_bias(D, pop_STP=10, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)["bias"]) > 0 
+this_bias = check_bias(D, pop_STP=10, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time, ID_column=:ID, full_output=false)
+@test abs(this_bias.bias[1]) > 0 
 
 
 @test city_sim_data("doesnotexist") == nothing

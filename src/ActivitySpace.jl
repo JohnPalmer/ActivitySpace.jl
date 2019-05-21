@@ -186,18 +186,22 @@ export check_bias
 
 Convenience function that calculates the difference between the mean of the empirical sampling distribution and the population STP value. Returns this difference (the estimator bias), along with the STP value, the full empirical sampling distribution, and information about the data. If the STP value is supplied in the function call, then it will not be calculated (thus saving processing time).
 """
-function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential)
+function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential, full_output::Bool=false)
 	@assert group_column ∈ names(D)
 	@assert X_column ∈ names(D)
 	@assert Y_column ∈ names(D) 
 	@assert size(D[ D[group_column] .== group_a, :],1) > 0
 	@assert size(D[ D[group_column] .== group_b, :],1) > 0
 	if pop_STP == nothing
-		pop_STP = stprox(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, f=f)
+		pop_STP = stprox(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, f=f)["STP"]
 	end
 	esd = empirical_sampling_distribution(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, ID_column=ID_column, f=f, nreps=nreps, sample_size=sample_size)
-	this_bias = mean(esd.STP)-pop_STP["STP"]
-    return Dict("bias" => this_bias, "pop_STP" => pop_STP, "esd" => esd, "sample_size" => sample_size, "nreps" => nreps, "data" => D, "group_column" => string(group_column), "group_a" => group_a, "group_b" => group_b, "ID_column" => string(ID_column), "time_column" => string(time_column), "f" => string(f))
+	this_bias = mean(esd.STP)-pop_STP
+	if full_output
+	    return Dict("bias" => this_bias, "pop_STP" => pop_STP, "esd" => esd, "sample_size" => sample_size, "nreps" => nreps, "group_column" => string(group_column), "group_a" => group_a, "group_b" => group_b, "ID_column" => string(ID_column), "time_column" => string(time_column), "f" => string(f))
+	else
+	    return DataFrame(bias = this_bias, pop_STP = pop_STP, sample_size = sample_size, nreps = nreps, group_column = string(group_column), group_a = group_a, group_b = group_b, ID_column = string(ID_column), time_column = string(time_column), f = string(f))
+	end
 end
 
 export dataset
