@@ -46,6 +46,37 @@ function distance_sum(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=ne
 end
 
 
+"""
+	distance_sum3d(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+
+Internal function for summing distances between all points represented in a matrix with 3 columns containing the X and Y coordinates, and time. The distances are transformed by whatever function is supplied in the call. 
+"""
+function distance_sum3d(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+    this_distance_sum = Float64(0)
+    nrowA::Int64 = size(A, 1)
+    for i in 1:(nrowA-1), j in (i+1):nrowA
+        this_distance_sum += f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2 + (A[i, 3]-A[j, 3])^2))
+    end
+    return this_distance_sum
+end
+
+
+"""
+	distance_sum3d(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+
+Internal function for summing distances between two sets of points, each represented in a matrix with 3 columns (X and Y coordinates and time). The distances are transformed by whatever function is supplied in the call. 
+"""
+function distance_sum3d(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+    this_distance_sum = Float64(0)
+    nrowA::Int64 = size(A, 1)
+    nrowB::Int64 = size(B, 1)
+    for i in 1:nrowA, j in 1:nrowB
+        this_distance_sum += f(sqrt((A[i, 1]-B[j, 1])^2 + (A[i, 2]-B[j, 2])^2 + (A[i, 3]-B[j, 3])^2))
+    end
+    return this_distance_sum
+end
+
+
 export stprox
 """
 	stprox(D::DataFrame; 
@@ -93,10 +124,22 @@ function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::
 		    Pbb += Sbb/n_b
 		    Ptt += Stt/n_t
 		end
+		Paa /= length(times)
+		Pbb /= length(times)
+		Ptt /= length(times)
+	elseif time_approach == 2
+	    A = convert(Matrix, D[ (D[group_column].==group_a), [X_column, Y_column, time_column] ])	
+	    B = convert(Matrix, D[ (D[group_column].==group_b), [X_column, Y_column, time_column]])	
+		n_a = (size(A, 1)^2 - size(A, 1))/2
+		n_b = (size(B, 1)^2 - size(B, 1))/2
+		n_t = size(A, 1)*size(B, 1) + n_a + n_b
+		Saa = distance_sum3d(A, f)
+		Sbb = distance_sum3d(B, f)
+		Stt = distance_sum3d(A, B, f) + Saa + Sbb
+		Paa += Saa/n_a
+		Pbb += Sbb/n_b
+		Ptt += Stt/n_t
 	end
-	Paa /= length(times)
-	Pbb /= length(times)
-	Ptt /= length(times)
     a = N_a * Paa + N_b * Pbb
     b = N_t * Ptt
     STP = a/b
@@ -119,7 +162,7 @@ export empirical_sampling_distribution
 
 Returns a DataFrame containing the empirical sampling distribution for the Spatio-Temporal Proximity Index and its components.
 """
-function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol=:time, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, f::Function=negative_exponential)::DataFrame
+function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol=:time, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, f::Function=negative_exponential, time_approach=1)::DataFrame
 	@assert nreps > 0
 	@assert sample_size > 0
 	@assert group_column ∈ names(D)
@@ -142,7 +185,7 @@ function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, gro
 	for i in 1:nreps
 		these_IDs = rand(IDs, sample_size)
         Dsamp = D[ indexin(D[ID_column], these_IDs) .!= nothing, :]
-        this_result = stprox(Dsamp, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column = Y_column, time_column=time_column, N_a=N_a, N_b=N_b, f=f)
+        this_result = stprox(Dsamp, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column = Y_column, time_column=time_column, N_a=N_a, N_b=N_b, f=f, time_approach=time_approach)
         push!(STP_esd, this_result["STP"])
         push!(Paa_esd, this_result["Paa"])
         push!(Pbb_esd, this_result["Pbb"])
@@ -186,16 +229,16 @@ export check_bias
 
 Convenience function that calculates the difference between the mean of the empirical sampling distribution and the population STP value. Returns this difference (the estimator bias), along with the STP value, the full empirical sampling distribution, and information about the data. If the STP value is supplied in the function call, then it will not be calculated (thus saving processing time).
 """
-function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential, full_output::Bool=false)
+function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential, time_approach=1, full_output::Bool=false)
 	@assert group_column ∈ names(D)
 	@assert X_column ∈ names(D)
 	@assert Y_column ∈ names(D) 
 	@assert size(D[ D[group_column] .== group_a, :],1) > 0
 	@assert size(D[ D[group_column] .== group_b, :],1) > 0
 	if pop_STP == nothing
-		pop_STP = stprox(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, f=f)["STP"]
+		pop_STP = stprox(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, f=f, time_approach=time_approach)["STP"]
 	end
-	esd = empirical_sampling_distribution(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, ID_column=ID_column, f=f, nreps=nreps, sample_size=sample_size)
+	esd = empirical_sampling_distribution(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, ID_column=ID_column, f=f, time_approach=time_approach, nreps=nreps, sample_size=sample_size)
 	this_bias = mean(esd.STP)-pop_STP
 	if full_output
 	    return Dict("bias" => this_bias, "pop_STP" => pop_STP, "esd" => esd, "sample_size" => sample_size, "nreps" => nreps, "group_column" => string(group_column), "group_a" => group_a, "group_b" => group_b, "ID_column" => string(ID_column), "time_column" => string(time_column), "f" => string(f))

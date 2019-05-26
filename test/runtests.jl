@@ -4,12 +4,18 @@ using ActivitySpace, Statistics, Test, DataFrames
 	@test ActivitySpace.negative_exponential(0.0) == 1.0
 	@test typeof(ActivitySpace.negative_exponential(0.0)) == Float64
 	@test ActivitySpace.negative_exponential(1.0) == exp(-1.0)
-	thisA = convert(Matrix, DataFrame(X=[0.0, 3.0], Y=[0.0, 4.0]))
-	thisB = convert(Matrix, DataFrame(X=[3.0, 0.0], Y=[4.0, 0.0]))
+	thisA = convert(Matrix, DataFrame(X=[0.0, 3.0], Y=[0.0, 4.0], time=[0.0, 0.0]))
+	thisB = convert(Matrix, DataFrame(X=[3.0, 0.0], Y=[4.0, 0.0], time=[0.0, 0.0]))
 	@test ActivitySpace.distance_sum(thisA) == exp(-5)
 	@test ActivitySpace.distance_sum(thisA, ActivitySpace.identity) == 5
 	@test ActivitySpace.distance_sum(thisA, thisB) == exp(-5) + exp(0) + exp(0) + exp(-5)
 	@test ActivitySpace.distance_sum(thisA, thisB, ActivitySpace.identity) == 10
+	@test ActivitySpace.distance_sum3d(thisA) == exp(-5)
+	@test ActivitySpace.distance_sum3d(thisA, ActivitySpace.identity) == 5
+	@test ActivitySpace.distance_sum3d(thisA, thisB) == exp(-5) + exp(0) + exp(0) + exp(-5)
+	@test ActivitySpace.distance_sum3d(thisA, thisB, ActivitySpace.identity) == 10
+
+
 end
 
 D = dataset("utica_sim0")
@@ -20,7 +26,7 @@ D = dataset("utica_sim0")
 
 	D_small = vcat(D[ D[:race] .== "w", :][1:1000, :], D[ D[:race] .== "b", :][1:300, :] )
 
-	this_result = stprox(D_small, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
+	this_result = stprox(D_small, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time, time_approach=1)
 
 	@test this_result isa Dict{String,Float64}
 	@test this_result["Ptt"] == 0.0028392947626870195
@@ -28,6 +34,16 @@ D = dataset("utica_sim0")
 	@test this_result["b"] == 3.6910831914931252
 	@test this_result["a"] == 5.2936674194953275
 	@test this_result["Paa"] == 0.004109710853971436
+
+	this_result3d = stprox(D_small, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time, time_approach=2)
+
+	@test this_result3d isa Dict{String,Float64}
+	@test this_result3d["Ptt"] == 0.0028392947626870195
+	@test this_result3d["Pbb"] == 0.003946521885079636
+	@test this_result3d["b"] == 3.6910831914931252
+	@test this_result3d["a"] == 5.2936674194953275
+	@test this_result3d["Paa"] == 0.004109710853971436
+
 
 end
 
