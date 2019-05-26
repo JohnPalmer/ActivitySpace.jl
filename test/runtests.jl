@@ -72,7 +72,9 @@ end
 	@test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="w", group_b="doesnotexist", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
 	this_bias = check_bias(D, pop_STP=10, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time, ID_column=:ID, full_output=false)
 	@test abs(this_bias.bias[1]) > 0 
-
+	this_bias = check_bias(D, pop_STP=10, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time, ID_column=:ID, full_output=true)
+	@test isa(this_bias, Dict)
+	    
 end
 
 @testset "Column Randomization" begin
@@ -89,6 +91,7 @@ end
 
 	@test city_sim_data("doesnotexist") == nothing
 	@test size(city_sim_data("Utica"), 2) > 1
+	@test size(city_sim_data("Utica", testing=true), 2) > 1
 
 
 	@test dataset("doesnotexist") == nothing
