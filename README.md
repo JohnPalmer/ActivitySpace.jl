@@ -86,7 +86,8 @@ julia> D = dataset("utica_sim0")
 │ 53970 │ 0     │ b      │ -75.2822  │ 43.0744  │ 4.77029e5 │ 4.76912e6 │ 53970 │
 │ 53971 │ 0     │ b      │ -75.2789  │ 43.0704  │ 4.77291e5 │ 4.76867e6 │ 53971 │
 
-julia> @time this_result = stprox(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
+julia> @time this_result = stprox(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, 
+	Y_column=:Y_UTM, time_column=:time)
  12.843548 seconds (421.58 k allocations: 27.865 MiB, 0.08% gc time)
 Dict{String,Float64} with 6 entries:
   "STP" => 1.24563
@@ -130,7 +131,8 @@ Fetching Utica data from https://zenodo.org/record/2865830/files/utica_sim_full.
 │ 917507 │ 8.0     │ b      │ 53971 │ -75.2612  │ 43.0793  │ 4.7874e5  │ 4.76965e6 │
 
 
-julia> @time this_result = stprox(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
+julia> @time this_result = stprox(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, 
+	Y_column=:Y_UTM, time_column=:time)
 225.767357 seconds (2.74 k allocations: 84.322 MiB, 0.17% gc time)
 Dict{String,Float64} with 6 entries:
   "STP" => 1.22425
@@ -205,7 +207,8 @@ julia> B_home = D[ D.time.==0, :]
 │ 258590 │ 0.0     │ b      │ 258590 │ -78.8084  │ 42.8409  │ 6.79095e5 │ 4.74548e6 │
 │ 258591 │ 0.0     │ b      │ 258591 │ -78.8064  │ 42.8346  │ 6.79278e5 │ 4.74478e6 │
 
-julia> @time stp = stprox(B_home, group_column=:race, group_a = "w", group_b = "b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
+julia> @time stp = stprox(B_home, group_column=:race, group_a = "w", group_b = "b", X_column=:X_UTM, 
+	Y_column=:Y_UTM, time_column=:time)
 349.284447 seconds (419 allocations: 35.740 MiB)
 Dict{String,Float64} with 6 entries:
   "STP" => 1.53455
