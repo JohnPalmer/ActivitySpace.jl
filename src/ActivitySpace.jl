@@ -16,7 +16,7 @@ end
 	distance_sum(A::Array{Float64, 2},
 	    f::Function=negative_exponential)::Float64
 
-Internal function for summing distances between all points represented in a matrix with 2 columns containing the X and Y coordinates. The distances are transformed by whatever function is supplied in the call. 
+Internal function for summing distances between all points represented in a matrix with 2 columns containing the X and Y coordinates. The distances are transformed by whatever function is supplied in the call.
 """
 function distance_sum(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
@@ -29,11 +29,11 @@ end
 
 
 """
-	distance_sum(A::Array{Float64, 2}, 
-	    B::Array{Float64, 2}, 
+	distance_sum(A::Array{Float64, 2},
+	    B::Array{Float64, 2},
 	    f::Function=negative_exponential)::Float64
 
-Internal function for summing distances between two sets of points, each represented in a matrix with 2 columns (X and Y coordinates). The distances are transformed by whatever function is supplied in the call. 
+Internal function for summing distances between two sets of points, each represented in a matrix with 2 columns (X and Y coordinates). The distances are transformed by whatever function is supplied in the call.
 """
 function distance_sum(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
@@ -49,7 +49,7 @@ end
 """
 	distance_sum3d(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
 
-Internal function for summing distances between all points represented in a matrix with 3 columns containing the X and Y coordinates, and time. The distances are transformed by whatever function is supplied in the call. 
+Internal function for summing distances between all points represented in a matrix with 3 columns containing the X and Y coordinates, and time. The distances are transformed by whatever function is supplied in the call.
 """
 function distance_sum3d(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
@@ -64,7 +64,7 @@ end
 """
 	distance_sum3d(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
 
-Internal function for summing distances between two sets of points, each represented in a matrix with 3 columns (X and Y coordinates and time). The distances are transformed by whatever function is supplied in the call. 
+Internal function for summing distances between two sets of points, each represented in a matrix with 3 columns (X and Y coordinates and time). The distances are transformed by whatever function is supplied in the call.
 """
 function distance_sum3d(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
@@ -79,15 +79,15 @@ end
 
 export stprox
 """
-	stprox(D::DataFrame; 
-	    group_column::Symbol, 
-	    group_a, group_b, 
-	    X_column::Symbol, 
-	    Y_column::Symbol, 
-	    time_column::Symbol, 
-	    N_a::Union{Int, Nothing}=nothing, 
-	    N_b::Union{Int, Nothing}=nothing, 
-	    f::Function=negative_exponential, 
+	stprox(D::DataFrame;
+	    group_column::Symbol,
+	    group_a, group_b,
+	    X_column::Symbol,
+	    Y_column::Symbol,
+	    time_column::Symbol,
+	    N_a::Union{Int, Nothing}=nothing,
+	    N_b::Union{Int, Nothing}=nothing,
+	    f::Function=negative_exponential,
 	    time_approach=1)
 
 Returns the Spatio-Temporal Proximity Index
@@ -95,7 +95,7 @@ Returns the Spatio-Temporal Proximity Index
 function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, N_a::Union{Int, Nothing}=nothing, N_b::Union{Int, Nothing}=nothing, f::Function=negative_exponential, time_approach=1)
 	@assert group_column ∈ names(D)
 	@assert X_column ∈ names(D)
-	@assert Y_column ∈ names(D) 
+	@assert Y_column ∈ names(D)
 	@assert size(D[ D[group_column] .== group_a, :],1) > 0
 	@assert size(D[ D[group_column] .== group_b, :],1) > 0
 
@@ -112,8 +112,8 @@ function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::
 	Ptt = Float64(0)
 	if time_approach == 1
 	    for t in times
-	    	A = convert(Matrix, D[ (D[group_column].==group_a) .& (D[time_column] .== t), [X_column, Y_column] ])	
-	    	B = convert(Matrix, D[ (D[group_column].==group_b) .& (D[time_column] .== t), [X_column, Y_column]])	
+	    	A = convert(Matrix, D[ (D[group_column].==group_a) .& (D[time_column] .== t), [X_column, Y_column] ])
+	    	B = convert(Matrix, D[ (D[group_column].==group_b) .& (D[time_column] .== t), [X_column, Y_column]])
 		    n_a = (size(A, 1)^2 - size(A, 1))/2
 		    n_b = (size(B, 1)^2 - size(B, 1))/2
 		    n_t = size(A, 1)*size(B, 1) + n_a + n_b
@@ -128,8 +128,8 @@ function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::
 		Pbb /= length(times)
 		Ptt /= length(times)
 	elseif time_approach == 2
-	    A = convert(Matrix, D[ (D[group_column].==group_a), [X_column, Y_column, time_column] ])	
-	    B = convert(Matrix, D[ (D[group_column].==group_b), [X_column, Y_column, time_column]])	
+	    A = convert(Matrix, D[ (D[group_column].==group_a), [X_column, Y_column, time_column] ])
+	    B = convert(Matrix, D[ (D[group_column].==group_b), [X_column, Y_column, time_column]])
 		n_a = (size(A, 1)^2 - size(A, 1))/2
 		n_b = (size(B, 1)^2 - size(B, 1))/2
 		n_t = size(A, 1)*size(B, 1) + n_a + n_b
@@ -148,16 +148,16 @@ end
 
 export empirical_sampling_distribution
 """
-	empirical_sampling_distribution(D::DataFrame; 
-	    group_column::Symbol, 
-	    group_a, 
-	    group_b, 
-	    X_column::Symbol, 
-	    Y_column::Symbol, 
-	    time_column::Symbol=:time, 
-	    ID_column::Symbol=:ID, 
-	    nreps::Int=500, 
-	    sample_size::Int=100, 
+	empirical_sampling_distribution(D::DataFrame;
+	    group_column::Symbol,
+	    group_a,
+	    group_b,
+	    X_column::Symbol,
+	    Y_column::Symbol,
+	    time_column::Symbol=:time,
+	    ID_column::Symbol=:ID,
+	    nreps::Int=500,
+	    sample_size::Int=100,
 	    f::Function=negative_exponential)::DataFrame
 
 Returns a DataFrame containing the empirical sampling distribution for the Spatio-Temporal Proximity Index and its components.
@@ -167,8 +167,8 @@ function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, gro
 	@assert sample_size > 0
 	@assert group_column ∈ names(D)
 	@assert X_column ∈ names(D)
-	@assert Y_column ∈ names(D) 
-	@assert time_column ∈ names(D) 
+	@assert Y_column ∈ names(D)
+	@assert time_column ∈ names(D)
 	@assert size(D[ D[group_column] .== group_a, :],1) > 0
 	@assert size(D[ D[group_column] .== group_b, :],1) > 0
     STP_esd::Array{Float64} = []
@@ -193,13 +193,13 @@ function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, gro
         push!(a_esd, this_result["a"])
         push!(b_esd, this_result["b"])
     end
-    return DataFrame(STP = STP_esd, Paa = Paa_esd, Pbb = Pbb_esd, Ptt = Ptt_esd, a = a_esd, b = b_esd)
+    return DataFrame(STP = STP_esd, Paa = Paa_esd, Pbb = Pbb_esd, Ptt = Ptt_esd, a = a_esd, b = b_esd, N_a = N_a, N_b = N_b)
 end
 
 export randomize_column
 """
-	randomize_column(D::DataFrame; 
-	    column_name::Symbol, 
+	randomize_column(D::DataFrame;
+	    column_name::Symbol,
 	    n::Int)
 
 Returns a DataFrame in which n elements of the indicated column have been shuffled.
@@ -214,17 +214,17 @@ end
 
 export check_bias
 """
-	check_bias(D; 
-	    group_column::Symbol, 
-	    group_a, 
-	    group_b, 
-	    X_column::Symbol, 
-	    Y_column::Symbol, 
-	    time_column::Symbol, 
-	    ID_column::Symbol=:ID, 
-	    nreps::Int=500, 
-	    sample_size::Int=100, 
-	    pop_STP::Union{Number, Nothing}=nothing, 
+	check_bias(D;
+	    group_column::Symbol,
+	    group_a,
+	    group_b,
+	    X_column::Symbol,
+	    Y_column::Symbol,
+	    time_column::Symbol,
+	    ID_column::Symbol=:ID,
+	    nreps::Int=500,
+	    sample_size::Int=100,
+	    pop_STP::Union{Number, Nothing}=nothing,
 	    f::Function=negative_exponential)
 
 Convenience function that calculates the difference between the mean of the empirical sampling distribution and the population STP value. Returns this difference (the estimator bias), along with the STP value, the full empirical sampling distribution, and information about the data. If the STP value is supplied in the function call, then it will not be calculated (thus saving processing time).
@@ -232,7 +232,7 @@ Convenience function that calculates the difference between the mean of the empi
 function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential, time_approach=1, full_output::Bool=false)
 	@assert group_column ∈ names(D)
 	@assert X_column ∈ names(D)
-	@assert Y_column ∈ names(D) 
+	@assert Y_column ∈ names(D)
 	@assert size(D[ D[group_column] .== group_a, :],1) > 0
 	@assert size(D[ D[group_column] .== group_b, :],1) > 0
 	if pop_STP == nothing
@@ -240,10 +240,14 @@ function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol,
 	end
 	esd = empirical_sampling_distribution(D, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column=Y_column, time_column=time_column, ID_column=ID_column, f=f, time_approach=time_approach, nreps=nreps, sample_size=sample_size)
 	this_bias = mean(esd.STP)-pop_STP
+	N_a = esd.N_a[1]
+	N_b=esd.N_b[1]
+	min_prop = min(N_a, N_b)/(N_a+N_b)
+
 	if full_output
 	    return Dict("bias" => this_bias, "pop_STP" => pop_STP, "esd" => esd, "sample_size" => sample_size, "nreps" => nreps, "group_column" => string(group_column), "group_a" => group_a, "group_b" => group_b, "ID_column" => string(ID_column), "time_column" => string(time_column), "f" => string(f))
 	else
-	    return DataFrame(bias = this_bias, pop_STP = pop_STP, sample_size = sample_size, nreps = nreps, group_column = string(group_column), group_a = group_a, group_b = group_b, ID_column = string(ID_column), time_column = string(time_column), f = string(f))
+	    return DataFrame(bias = this_bias, pop_STP = pop_STP, sample_size = sample_size, nreps = nreps, group_column = string(group_column), group_a = group_a, group_b = group_b, ID_column = string(ID_column), time_column = string(time_column), f = string(f), N_a = N_a, N_b=N_b, min_prop = min_prop)
 	end
 end
 
@@ -274,9 +278,9 @@ end
 
 export city_sim_data
 """
-	city_sim_data(city::AbstractString="")	
+	city_sim_data(city::AbstractString="")
 
-Returns a dataset from a remote location. 
+Returns a dataset from a remote location.
 
 ## Parameters
 
@@ -296,11 +300,11 @@ Load the Buffalo simulation dataset:
 julia> D  = city_sim_data("Buffalo")
 ```
 """
-function city_sim_data(city::AbstractString=""; testing=false)	
-	remote_data = Dict("Utica" => "https://zenodo.org/record/2865830/files/utica_sim_full.csv.gz", "Buffalo" => "https://zenodo.org/record/2865830/files/buffalo_sim_full.csv.gz") 
+function city_sim_data(city::AbstractString=""; testing=false)
+	remote_data = Dict("Utica" => "https://zenodo.org/record/2865830/files/utica_sim_full.csv.gz", "Buffalo" => "https://zenodo.org/record/2865830/files/buffalo_sim_full.csv.gz")
 	remote_data_alt1 = Dict("Utica" => "https://drive.google.com/uc?export=download&id=13VMKjAIloyEQHBz8LMQqHhgCnv7clFum", "Buffalo" => "https://drive.google.com/uc?export=download&id=13X01yDEt6y99pPbDJz_-hY3nYdCRYbrx")
 	if !(city ∈ keys(remote_data))
-		println("Available datasets:") 
+		println("Available datasets:")
 		for k in keys(remote_data)
 			println(k)
 		end
@@ -322,7 +326,7 @@ export calculate_bias
 """
 	calculate_bias(D, randomns)
 
-Returns a XXX.
+Returns a .
 """
 function calculate_bias(D, randomns)
 	bias_calcs = []
@@ -335,6 +339,7 @@ function calculate_bias(D, randomns)
 	    push!(bias_calcs, check_bias(pop_STP, D_new, 1000, 300))
 	end
 end
+=#
 
 function ib(i, b)
     sigma = Float64(0)
@@ -364,8 +369,6 @@ export rice_correction
 function rice_correction(a, b, n, h)
     Ea = mean(a)
     Eb = mean(b)
-    a = shuffle(a)
-    b = shuffle(b)
     result = Float64(0)
     for i in 1:n
         this_numerator = ((-1)^i) * (Ea*ib(i, b) + aib(a, i, b))
@@ -377,6 +380,5 @@ function rice_correction(a, b, n, h)
     end
     return result
 end
-=#
 
 end # module
