@@ -27,6 +27,41 @@ function distance_sum(A::Array{Float64, 2}, f::Function=negative_exponential)::F
     return this_distance_sum
 end
 
+export distance_mean
+
+function distance_mean(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+	n_a = (size(A, 1)^2 - size(A, 1))/2
+	return distance_sum(A, f)/n_a
+end
+
+export distance_variance
+
+function distance_variance(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)::Float64
+	A = convert(Matrix, D[:, [X_column, Y_column] ])
+	this_mean::Float64 = distance_mean(A, f)
+	this_sq_deviation_sum = Float64(0)
+	n_a = (size(A, 1)^2 - size(A, 1))/2
+	nrowA::Int64 = size(A, 1)
+	for i in 1:(nrowA-1), j in (i+1):nrowA
+		this_sq_deviation_sum += (f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2)) - this_mean)^2
+	end
+	return this_sq_deviation_sum/n_a
+end
+
+
+export distance_skewness
+
+function distance_skewness(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)::Float64
+	A = convert(Matrix, D[:, [X_column, Y_column] ])
+	this_mean::Float64 = distance_mean(A, f)
+	this_cu_deviation_sum = Float64(0)
+	n_a = (size(A, 1)^2 - size(A, 1))/2
+	nrowA::Int64 = size(A, 1)
+	for i in 1:(nrowA-1), j in (i+1):nrowA
+		this_cu_deviation_sum += (f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2)) - this_mean)^3
+	end
+	return this_cu_deviation_sum/n_a
+end
 
 """
 	distance_sum(A::Array{Float64, 2},
@@ -75,7 +110,6 @@ function distance_sum3d(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=
     end
     return this_distance_sum
 end
-
 
 export stprox
 """
