@@ -21,7 +21,7 @@ end
 D = dataset("utica_sim0")
 
 @testset "Spatio-Temporal Proximity Function" begin
-	
+
 	@test D isa DataFrame
 
 	D_small = vcat(D[ D[:race] .== "w", :][1:1000, :], D[ D[:race] .== "b", :][1:300, :] )
@@ -59,7 +59,7 @@ end
 
 	this_esd = empirical_sampling_distribution(D, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
 	@test this_esd isa DataFrame
-	@test size(this_esd) == (500, 6)
+	@test size(this_esd) == (500, 8)
 
 end
 
@@ -71,10 +71,10 @@ end
 	@test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="doesnotexist", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
 	@test_throws AssertionError check_bias(D, pop_STP=1, group_column=:race, group_a="w", group_b="doesnotexist", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time)
 	this_bias = check_bias(D, pop_STP=10, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time, ID_column=:ID, full_output=false)
-	@test abs(this_bias.bias[1]) > 0 
+	@test abs(this_bias.bias[1]) > 0
 	this_bias = check_bias(D, pop_STP=10, group_column=:race, group_a="w", group_b="b", X_column=:X_UTM, Y_column=:Y_UTM, time_column=:time, ID_column=:ID, full_output=true)
 	@test isa(this_bias, Dict)
-	    
+
 end
 
 @testset "Column Randomization" begin
@@ -83,7 +83,7 @@ end
 	@test size(D_shuff, 1) == size(D, 1)
 	@test ndims(D_shuff) == ndims(D)
 	@test size(D_shuff[ D_shuff.race.=="w", :], 1) == size(D[ D.race.=="w", :], 1)
-	D_shuff.race != D.race 
+	D_shuff.race != D.race
 end
 
 @testset "Data operations" begin
