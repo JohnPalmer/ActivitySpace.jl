@@ -1,6 +1,6 @@
 module ActivitySpace
 
-using DataFrames, Statistics, Random, TableReader
+using DataFrames, Statistics, Random, TableReader, ProgressMeter
 
 export negative_exponential
 """
@@ -67,7 +67,7 @@ end
 export distance_moments
 
 # from Terriberry & Chan at https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
-function distance_moments(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)::Float64
+function distance_moments(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)::Dict
 	A = convert(Matrix, D[:, [X_column, Y_column] ])
 	this_mean::Float64 = distance_mean_kbn(A, f)
 	mean = Float64(0)
@@ -76,8 +76,8 @@ function distance_moments(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::F
 	M4 = Float64(0)
 	n = Int64(0)
 	nrowA::Int64 = size(A, 1)
-	for i in 1:(nrowA-1), j in (i+1):nrowA
-		N1 = n
+	@showprogress 1 "Computing..." for i in 1:(nrowA-1), j in (i+1):nrowA
+		n1 = n
 		n += 1
 		x = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2))
 		delta = x - mean
@@ -89,8 +89,37 @@ function distance_moments(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::F
 		M3 = M3 + term1 * delta_n * (n - 2) - 3 * delta_n * M2
 		M2 = M2 + term1
 	end
-	return Dict("mean" => M, "variance" => M2/n, "skewness" => (sqrt(n)*M3)/(M2^(3/2)), "kurtosis" => (n*M4)/(M2^2) - 3)
+	return Dict("mean" => mean, "variance" => M2/n, "skewness" => (sqrt(n)*M3)/(M2^(3/2)), "kurtosis" => ((n*M4)/(M2^2) - 3))
 end
+
+export distance_moments_np
+
+# from Terriberry & Chan at https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+function distance_moments_np(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)::Dict
+	A = convert(Matrix, D[:, [X_column, Y_column] ])
+	this_mean::Float64 = distance_mean_kbn(A, f)
+	mean = Float64(0)
+	M2 = Float64(0)
+	M3 = Float64(0)
+	M4 = Float64(0)
+	n = Int64(0)
+	nrowA::Int64 = size(A, 1)
+	for i in 1:(nrowA-1), j in (i+1):nrowA
+		n1 = n
+		n += 1
+		x = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2))
+		delta = x - mean
+		delta_n = delta / n
+		delta_n2 = delta_n * delta_n
+		term1 = delta * delta_n * n1
+		mean = mean + delta_n
+		M4 = M4 + term1 * delta_n2 * (n*n - 3*n + 3) + 6 * delta_n2 * M2 - 4 * delta_n * M3
+		M3 = M3 + term1 * delta_n * (n - 2) - 3 * delta_n * M2
+		M2 = M2 + term1
+	end
+	return Dict("mean" => mean, "variance" => M2/n, "skewness" => (sqrt(n)*M3)/(M2^(3/2)), "kurtosis" => ((n*M4)/(M2^2) - 3))
+end
+
 
 """
 	distance_sum(A::Array{Float64, 2},
@@ -158,7 +187,6 @@ function distance_sum3d(A::Array{Float64, 2}, f::Function=negative_exponential):
     end
     return this_distance_sum
 end
-
 
 """
 	distance_sum3d(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
