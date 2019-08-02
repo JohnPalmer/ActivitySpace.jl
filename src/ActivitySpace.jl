@@ -27,40 +27,69 @@ function distance_sum(A::Array{Float64, 2}, f::Function=negative_exponential)::F
     return this_distance_sum
 end
 
-export distance_mean
-
-function distance_mean(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
-	n_a = (size(A, 1)^2 - size(A, 1))/2
-	return distance_sum(A, f)/n_a
+function distance_sum_kahan(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+    this_distance_sum = Float64(0)
+	c = Float64(0)
+    nrowA::Int64 = size(A, 1)
+    for i in 1:(nrowA-1), j in (i+1):nrowA
+        this_distance = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2))
+		y = this_distance - c
+		t = this_distance_sum + y
+		c = (t - this_distance_sum) - y
+		this_distance_sum = t
+    end
+    return this_distance_sum
 end
 
-export distance_variance
-
-function distance_variance(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)::Float64
-	A = convert(Matrix, D[:, [X_column, Y_column] ])
-	this_mean::Float64 = distance_mean(A, f)
-	this_sq_deviation_sum = Float64(0)
-	n_a = (size(A, 1)^2 - size(A, 1))/2
+function distance_sum_kbn(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+	s = Float64(0)
+	c = Float64(0)
 	nrowA::Int64 = size(A, 1)
 	for i in 1:(nrowA-1), j in (i+1):nrowA
-		this_sq_deviation_sum += (f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2)) - this_mean)^2
+		this_distance = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2))
+    	t = s + this_distance
+        if ( abs(s) >= abs(this_distance) )
+			c += ( (s-t) + this_distance )
+        else
+			c += ( (this_distance-t) + s )
+		end
+		s = t
 	end
-	return this_sq_deviation_sum/n_a
+    return s + c
 end
 
+export distance_mean_kbn
 
-export distance_skewness
+function distance_mean_kbn(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+	return distance_sum_kbn(A, f)/((size(A, 1)^2 - size(A, 1))/2)
+end
 
-function distance_skewness(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)::Float64
+export distance_moments
+
+# from Terriberry & Chan at https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+function distance_moments(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)::Float64
 	A = convert(Matrix, D[:, [X_column, Y_column] ])
-	this_mean::Float64 = distance_mean(A, f)
-	this_cu_deviation_sum = Float64(0)
-	n_a = (size(A, 1)^2 - size(A, 1))/2
+	this_mean::Float64 = distance_mean_kbn(A, f)
+	mean = Float64(0)
+	M2 = Float64(0)
+	M3 = Float64(0)
+	M4 = Float64(0)
+	n = Int64(0)
 	nrowA::Int64 = size(A, 1)
 	for i in 1:(nrowA-1), j in (i+1):nrowA
-		this_cu_deviation_sum += (f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2)) - this_mean)^3
+		N1 = n
+		n += 1
+		x = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2))
+		delta = x - mean
+		delta_n = delta / n
+		delta_n2 = delta_n * delta_n
+		term1 = delta * delta_n * n1
+		mean = mean + delta_n
+		M4 = M4 + term1 * delta_n2 * (n*n - 3*n + 3) + 6 * delta_n2 * M2 - 4 * delta_n * M3
+		M3 = M3 + term1 * delta_n * (n - 2) - 3 * delta_n * M2
+		M2 = M2 + term1
 	end
-	return this_cu_deviation_sum/n_a
+	return Dict("mean" => M, "variance" => M2/n, "skewness" => (sqrt(n)*M3)/(M2^(3/2)), "kurtosis" => (n*M4)/(M2^2) - 3)
 end
 
 """
@@ -79,6 +108,41 @@ function distance_sum(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=ne
     end
     return this_distance_sum
 end
+
+function distance_sum_kahan(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+    this_distance_sum = Float64(0)
+	c = Float64(0)
+    nrowA::Int64 = size(A, 1)
+    nrowB::Int64 = size(B, 1)
+    for i in 1:nrowA, j in 1:nrowB
+        this_distance = f(sqrt((A[i, 1]-B[j, 1])^2 + (A[i, 2]-B[j, 2])^2))
+		y = this_distance - c
+		t = this_distance_sum + y
+		c = (t - this_distance_sum) - y
+		this_distance_sum = t
+    end
+    return this_distance_sum
+end
+
+function distance_sum_kbn(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+	s = Float64(0)
+	c = Float64(0)
+	nrowA::Int64 = size(A, 1)
+	nrowB::Int64 = size(B, 1)
+	for i in 1:nrowA, j in 1:nrowB
+        this_distance = f(sqrt((A[i, 1]-B[j, 1])^2 + (A[i, 2]-B[j, 2])^2))
+    	t = s + this_distance
+        if ( abs(s) >= abs(this_distance) )
+			c += ( (s-t) + this_distance )
+        else
+			c += ( (this_distance-t) + s )
+		end
+		s = t
+	end
+    return s + c
+end
+
+
 
 
 """
@@ -126,7 +190,7 @@ export stprox
 
 Returns the Spatio-Temporal Proximity Index
 """
-function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, N_a::Union{Int, Nothing}=nothing, N_b::Union{Int, Nothing}=nothing, f::Function=negative_exponential, time_approach=1)
+function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, N_a::Union{Int, Nothing}=nothing, N_b::Union{Int, Nothing}=nothing, f::Function=negative_exponential, time_approach=1, summation="naive")
 	@assert group_column ∈ names(D)
 	@assert X_column ∈ names(D)
 	@assert Y_column ∈ names(D)
@@ -151,9 +215,19 @@ function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::
 		    n_a = (size(A, 1)^2 - size(A, 1))/2
 		    n_b = (size(B, 1)^2 - size(B, 1))/2
 		    n_t = size(A, 1)*size(B, 1) + n_a + n_b
-		    Saa = distance_sum(A, f)
-		    Sbb = distance_sum(B, f)
-		    Stt = distance_sum(A, B, f) + Saa + Sbb
+			if summation == "naive"
+			    Saa = distance_sum(A, f)
+			    Sbb = distance_sum(B, f)
+			    Stt = distance_sum(A, B, f) + Saa + Sbb
+			elseif summation == "kahan"
+				Saa = distance_sum_kahan(A, f)
+			    Sbb = distance_sum_kahan(B, f)
+			    Stt = distance_sum_kahan(A, B, f) + Saa + Sbb
+			elseif summation == "kbn"
+				Saa = distance_sum_kbn(A, f)
+			    Sbb = distance_sum_kbn(B, f)
+			    Stt = distance_sum_kbn(A, B, f) + Saa + Sbb
+			end
 		    Paa += Saa/n_a
 		    Pbb += Sbb/n_b
 		    Ptt += Stt/n_t
