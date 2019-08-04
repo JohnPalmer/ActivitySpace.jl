@@ -45,7 +45,7 @@ function distance_sum_kbn(A::Array{Float64, 2}, f::Function=negative_exponential
 	s = Float64(0)
 	c = Float64(0)
 	nrowA::Int64 = size(A, 1)
-	for i in 1:(nrowA-1), j in (i+1):nrowA
+	@showprogress 1 "Computing..." for i in 1:(nrowA-1), j in (i+1):nrowA
 		this_distance = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2))
     	t = s + this_distance
         if ( abs(s) >= abs(this_distance) )
@@ -69,7 +69,6 @@ export distance_moments
 # from Terriberry & Chan at https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
 function distance_moments(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)::Dict
 	A = convert(Matrix, D[:, [X_column, Y_column] ])
-	this_mean::Float64 = distance_mean_kbn(A, f)
 	mean = Float64(0)
 	M2 = Float64(0)
 	M3 = Float64(0)
@@ -92,32 +91,27 @@ function distance_moments(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::F
 	return Dict("mean" => mean, "variance" => M2/n, "skewness" => (sqrt(n)*M3)/(M2^(3/2)), "kurtosis" => ((n*M4)/(M2^2) - 3))
 end
 
-export distance_moments_np
+export moments
 
 # from Terriberry & Chan at https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
-function distance_moments_np(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)::Dict
-	A = convert(Matrix, D[:, [X_column, Y_column] ])
-	this_mean::Float64 = distance_mean_kbn(A, f)
+function moments(A::Array)::Dict
 	mean = Float64(0)
 	M2 = Float64(0)
 	M3 = Float64(0)
 	M4 = Float64(0)
-	n = Int64(0)
-	nrowA::Int64 = size(A, 1)
-	for i in 1:(nrowA-1), j in (i+1):nrowA
-		n1 = n
-		n += 1
-		x = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2))
+	N = length(A)
+	@showprogress 1 "Computing..." for n in 1:N
+		x = A[n]
 		delta = x - mean
 		delta_n = delta / n
 		delta_n2 = delta_n * delta_n
-		term1 = delta * delta_n * n1
+		term1 = delta * delta_n * (n-1)
 		mean = mean + delta_n
 		M4 = M4 + term1 * delta_n2 * (n*n - 3*n + 3) + 6 * delta_n2 * M2 - 4 * delta_n * M3
 		M3 = M3 + term1 * delta_n * (n - 2) - 3 * delta_n * M2
 		M2 = M2 + term1
 	end
-	return Dict("mean" => mean, "variance" => M2/n, "skewness" => (sqrt(n)*M3)/(M2^(3/2)), "kurtosis" => ((n*M4)/(M2^2) - 3))
+	return Dict("mean" => mean, "variance" => M2/N, "skewness" => (sqrt(N)*M3)/(M2^(3/2)), "kurtosis" => ((N*M4)/(M2^2) - 3))
 end
 
 
@@ -365,7 +359,7 @@ export check_bias
 
 Convenience function that calculates the difference between the mean of the empirical sampling distribution and the population STP value. Returns this difference (the estimator bias), along with the STP value, the full empirical sampling distribution, and information about the data. If the STP value is supplied in the function call, then it will not be calculated (thus saving processing time).
 """
-function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential, time_approach=1, full_output::Bool=false)
+function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential, time_approach=1, full_output::Bool=false, calculate_moments::Bool=true)
 	@assert group_column ∈ names(D)
 	@assert X_column ∈ names(D)
 	@assert Y_column ∈ names(D)
@@ -381,9 +375,19 @@ function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol,
 	min_prop = min(N_a, N_b)/(N_a+N_b)
 
 	if full_output
-	    return Dict("bias" => this_bias, "pop_STP" => pop_STP, "esd" => esd, "sample_size" => sample_size, "nreps" => nreps, "group_column" => string(group_column), "group_a" => group_a, "group_b" => group_b, "ID_column" => string(ID_column), "time_column" => string(time_column), "f" => string(f))
+		if calculate_moments
+			these_moments = distance_moments(D, X_column, Y_column, f)
+			return Dict("bias" => this_bias, "pop_STP" => pop_STP, "esd" => esd, "mean" => these_moments["mean"], "variance" => these_moments["variance"], "skewness" => these_moments["skewness"], "kurtosis" => these_moments["kurtosis"], "sample_size" => sample_size, "nreps" => nreps, "group_column" => string(group_column), "group_a" => group_a, "group_b" => group_b, "ID_column" => string(ID_column), "time_column" => string(time_column), "f" => string(f))
+		else
+	    	return Dict("bias" => this_bias, "pop_STP" => pop_STP, "esd" => esd, "sample_size" => sample_size, "nreps" => nreps, "group_column" => string(group_column), "group_a" => group_a, "group_b" => group_b, "ID_column" => string(ID_column), "time_column" => string(time_column), "f" => string(f))
+		end
 	else
-	    return DataFrame(bias = this_bias, pop_STP = pop_STP, sample_size = sample_size, nreps = nreps, group_column = string(group_column), group_a = group_a, group_b = group_b, ID_column = string(ID_column), time_column = string(time_column), f = string(f), N_a = N_a, N_b=N_b, min_prop = min_prop)
+		if calculate_moments
+			these_moments = distance_moments(D, X_column, Y_column, f)
+			return DataFrame(bias = this_bias, pop_STP = pop_STP, sample_size = sample_size, nreps = nreps, group_column = string(group_column), group_a = group_a, group_b = group_b, ID_column = string(ID_column), time_column = string(time_column), f = string(f), N_a = N_a, N_b=N_b, min_prop = min_prop, mean = these_moments["mean"], variance = these_moments["variance"], skewness = these_moments["skewness"], kurtosis = these_moments["kurtosis"])
+		else
+	    	return DataFrame(bias = this_bias, pop_STP = pop_STP, sample_size = sample_size, nreps = nreps, group_column = string(group_column), group_a = group_a, group_b = group_b, ID_column = string(ID_column), time_column = string(time_column), f = string(f), N_a = N_a, N_b=N_b, min_prop = min_prop)
+		end
 	end
 end
 
