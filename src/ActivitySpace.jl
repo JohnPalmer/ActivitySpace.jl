@@ -182,6 +182,24 @@ function distance_sum3d(A::Array{Float64, 2}, f::Function=negative_exponential):
     return this_distance_sum
 end
 
+function distance_sum3d_kbn(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+	s = Float64(0)
+	c = Float64(0)
+    nrowA::Int64 = size(A, 1)
+    for i in 1:(nrowA-1), j in (i+1):nrowA
+        this_distance = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2 + (A[i, 3]-A[j, 3])^2))
+		t = s + this_distance
+        if ( abs(s) >= abs(this_distance) )
+			c += ( (s-t) + this_distance )
+        else
+			c += ( (this_distance-t) + s )
+		end
+		s = t
+	end
+    return s + c
+end
+
+
 """
 	distance_sum3d(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
 
@@ -196,6 +214,25 @@ function distance_sum3d(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=
     end
     return this_distance_sum
 end
+
+function distance_sum3d_kbn(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=negative_exponential)::Float64
+	s = Float64(0)
+	c = Float64(0)
+    nrowA::Int64 = size(A, 1)
+    nrowB::Int64 = size(B, 1)
+    for i in 1:nrowA, j in 1:nrowB
+        this_distance = f(sqrt((A[i, 1]-B[j, 1])^2 + (A[i, 2]-B[j, 2])^2 + (A[i, 3]-B[j, 3])^2))
+		t = s + this_distance
+        if ( abs(s) >= abs(this_distance) )
+			c += ( (s-t) + this_distance )
+        else
+			c += ( (this_distance-t) + s )
+		end
+		s = t
+	end
+    return s + c
+end
+
 
 export stprox
 """
@@ -212,7 +249,7 @@ export stprox
 
 Returns the Spatio-Temporal Proximity Index
 """
-function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, N_a::Union{Int, Nothing}=nothing, N_b::Union{Int, Nothing}=nothing, f::Function=negative_exponential, time_approach=1, summation="naive")
+function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, N_a::Union{Int, Nothing}=nothing, N_b::Union{Int, Nothing}=nothing, f::Function=negative_exponential, time_approach=1, summation="kbn")
 	@assert group_column ∈ names(D)
 	@assert X_column ∈ names(D)
 	@assert Y_column ∈ names(D)
@@ -263,9 +300,18 @@ function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::
 		n_a = (size(A, 1)^2 - size(A, 1))/2
 		n_b = (size(B, 1)^2 - size(B, 1))/2
 		n_t = size(A, 1)*size(B, 1) + n_a + n_b
-		Saa = distance_sum3d(A, f)
-		Sbb = distance_sum3d(B, f)
-		Stt = distance_sum3d(A, B, f) + Saa + Sbb
+		if summation == "naive"
+			Saa = distance_sum3d(A, f)
+			Sbb = distance_sum3d(B, f)
+			Stt = distance_sum3d(A, B, f) + Saa + Sbb
+		elseif summation == "kahan"
+			Saa = distance_sum3d_kahan(A, f)
+			Sbb = distance_sum3d_kahan(B, f)
+			Stt = distance_sum3d_kahan(A, B, f) + Saa + Sbb
+		elseif summation == "kbn"
+			Saa = distance_sum3d_kbn(A, f)
+			Sbb = distance_sum3d_kbn(B, f)
+			Stt = distance_sum3d_kbn(A, B, f) + Saa + Sbb
 		Paa += Saa/n_a
 		Pbb += Sbb/n_b
 		Ptt += Stt/n_t
@@ -373,7 +419,6 @@ function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol,
 	N_a = esd.N_a[1]
 	N_b=esd.N_b[1]
 	min_prop = min(N_a, N_b)/(N_a+N_b)
-
 	if full_output
 		if calculate_moments
 			these_moments = distance_moments(D, X_column, Y_column, f)
