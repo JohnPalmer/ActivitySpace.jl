@@ -312,6 +312,7 @@ function stprox(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::
 			Saa = distance_sum3d_kbn(A, f)
 			Sbb = distance_sum3d_kbn(B, f)
 			Stt = distance_sum3d_kbn(A, B, f) + Saa + Sbb
+		end
 		Paa += Saa/n_a
 		Pbb += Sbb/n_b
 		Ptt += Stt/n_t
