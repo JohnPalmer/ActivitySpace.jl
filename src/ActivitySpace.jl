@@ -45,7 +45,7 @@ function distance_sum_kbn(A::Array{Float64, 2}, f::Function=negative_exponential
 	s = Float64(0)
 	c = Float64(0)
 	nrowA::Int64 = size(A, 1)
-	@showprogress 1 "Computing..." for i in 1:(nrowA-1), j in (i+1):nrowA
+	@showprogress 1 "Computing distance_sum_kbn A..." for i in 1:(nrowA-1), j in (i+1):nrowA
 		this_distance = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2))
     	t = s + this_distance
         if ( abs(s) >= abs(this_distance) )
@@ -75,7 +75,7 @@ function distance_moments(D::DataFrame, X_column::Symbol, Y_column::Symbol, f::F
 	M4 = Float64(0)
 	n = Int64(0)
 	nrowA::Int64 = size(A, 1)
-	@showprogress 1 "Computing..." for i in 1:(nrowA-1), j in (i+1):nrowA
+	@showprogress 1 "Computing distance_moments..." for i in 1:(nrowA-1), j in (i+1):nrowA
 		n1 = n
 		n += 1
 		x = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2))
@@ -100,7 +100,7 @@ function moments(A::Array)::Dict
 	M3 = Float64(0)
 	M4 = Float64(0)
 	N = length(A)
-	@showprogress 1 "Computing..." for n in 1:N
+	@showprogress 1 "Computing moments..." for n in 1:N
 		x = A[n]
 		delta = x - mean
 		delta_n = delta / n
@@ -126,7 +126,7 @@ function distance_sum(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=ne
     this_distance_sum = Float64(0)
     nrowA::Int64 = size(A, 1)
     nrowB::Int64 = size(B, 1)
-    for i in 1:nrowA, j in 1:nrowB
+    @showprogress 1 "Computing distance_sum A B..." for i in 1:nrowA, j in 1:nrowB
         this_distance_sum += f(sqrt((A[i, 1]-B[j, 1])^2 + (A[i, 2]-B[j, 2])^2))
     end
     return this_distance_sum
@@ -137,7 +137,7 @@ function distance_sum_kahan(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Funct
 	c = Float64(0)
     nrowA::Int64 = size(A, 1)
     nrowB::Int64 = size(B, 1)
-    for i in 1:nrowA, j in 1:nrowB
+    @showprogress 1 "Computing distance_sum_kahan A B..." for i in 1:nrowA, j in 1:nrowB
         this_distance = f(sqrt((A[i, 1]-B[j, 1])^2 + (A[i, 2]-B[j, 2])^2))
 		y = this_distance - c
 		t = this_distance_sum + y
@@ -152,7 +152,7 @@ function distance_sum_kbn(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Functio
 	c = Float64(0)
 	nrowA::Int64 = size(A, 1)
 	nrowB::Int64 = size(B, 1)
-	for i in 1:nrowA, j in 1:nrowB
+	@showprogress 1 "Computing distance_sum_kbn A B..." for i in 1:nrowA, j in 1:nrowB
         this_distance = f(sqrt((A[i, 1]-B[j, 1])^2 + (A[i, 2]-B[j, 2])^2))
     	t = s + this_distance
         if ( abs(s) >= abs(this_distance) )
@@ -176,7 +176,7 @@ Internal function for summing distances between all points represented in a matr
 function distance_sum3d(A::Array{Float64, 2}, f::Function=negative_exponential)::Float64
     this_distance_sum = Float64(0)
     nrowA::Int64 = size(A, 1)
-    for i in 1:(nrowA-1), j in (i+1):nrowA
+    @showprogress 1 "Computing distance_sum3d A..." for i in 1:(nrowA-1), j in (i+1):nrowA
         this_distance_sum += f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2 + (A[i, 3]-A[j, 3])^2))
     end
     return this_distance_sum
@@ -186,7 +186,7 @@ function distance_sum3d_kbn(A::Array{Float64, 2}, f::Function=negative_exponenti
 	s = Float64(0)
 	c = Float64(0)
     nrowA::Int64 = size(A, 1)
-    for i in 1:(nrowA-1), j in (i+1):nrowA
+    @showprogress 1 "Computing distance_sum3d_kbn A..." for i in 1:(nrowA-1), j in (i+1):nrowA
         this_distance = f(sqrt((A[i, 1]-A[j, 1])^2 + (A[i, 2]-A[j, 2])^2 + (A[i, 3]-A[j, 3])^2))
 		t = s + this_distance
         if ( abs(s) >= abs(this_distance) )
@@ -209,7 +209,7 @@ function distance_sum3d(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Function=
     this_distance_sum = Float64(0)
     nrowA::Int64 = size(A, 1)
     nrowB::Int64 = size(B, 1)
-    for i in 1:nrowA, j in 1:nrowB
+    @showprogress 1 "Computing distance_sum3d A B..." for i in 1:nrowA, j in 1:nrowB
         this_distance_sum += f(sqrt((A[i, 1]-B[j, 1])^2 + (A[i, 2]-B[j, 2])^2 + (A[i, 3]-B[j, 3])^2))
     end
     return this_distance_sum
@@ -220,7 +220,7 @@ function distance_sum3d_kbn(A::Array{Float64, 2}, B::Array{Float64, 2}, f::Funct
 	c = Float64(0)
     nrowA::Int64 = size(A, 1)
     nrowB::Int64 = size(B, 1)
-    for i in 1:nrowA, j in 1:nrowB
+    @showprogress 1 "Computing distance_sum3d_kbn A B..." for i in 1:nrowA, j in 1:nrowB
         this_distance = f(sqrt((A[i, 1]-B[j, 1])^2 + (A[i, 2]-B[j, 2])^2 + (A[i, 3]-B[j, 3])^2))
 		t = s + this_distance
         if ( abs(s) >= abs(this_distance) )
@@ -339,7 +339,7 @@ export empirical_sampling_distribution
 
 Returns a DataFrame containing the empirical sampling distribution for the Spatio-Temporal Proximity Index and its components.
 """
-function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol=:time, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, f::Function=negative_exponential, time_approach=1)::DataFrame
+function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol=:time, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, f::Function=negative_exponential, time_approach=1, sampling_type="simple", strata=nothing)::DataFrame
 	@assert nreps > 0
 	@assert sample_size > 0
 	@assert group_column ∈ names(D)
@@ -360,8 +360,16 @@ function empirical_sampling_distribution(D::DataFrame; group_column::Symbol, gro
 	N_a::Int64 = size(D[ (D[group_column].==group_a) .& (D[time_column] .== times[1]), :], 1)
 	N_b::Int64 = size(D[ (D[group_column].==group_b) .& (D[time_column] .== times[1]), :], 1)
 	for i in 1:nreps
-		these_IDs = rand(IDs, sample_size)
-        Dsamp = D[ indexin(D[ID_column], these_IDs) .!= nothing, :]
+		if sampling_type == "simple"
+			these_IDs = rand(IDs, sample_size)
+		elseif sampling_type == "stratefied"
+			these_IDs = zeros(Int64, 0)
+			for this_stratum in unique(D[ID_column])
+			    this_stratum_IDs = D[D[ID_column].==this_stratum, :ID]
+			    append!(these_IDs, rand(this_stratum_IDs, sample_size))
+			end
+		end
+		Dsamp = D[ indexin(D[ID_column], these_IDs) .!= nothing, :]
         this_result = stprox(Dsamp, group_column=group_column, group_a=group_a, group_b=group_b, X_column=X_column, Y_column = Y_column, time_column=time_column, N_a=N_a, N_b=N_b, f=f, time_approach=time_approach)
         push!(STP_esd, this_result["STP"])
         push!(Paa_esd, this_result["Paa"])
@@ -566,5 +574,82 @@ function rice_correction(a, b, n, h)
     end
     return result
 end
+
+export dissimilarity
+
+function dissimilarity(D::DataFrame; group_column::Symbol, group_a, group_b, areal_unit_column::Symbol)
+	D_a = by(D[D[group_column].==group_a, :], areal_unit_column, N_a = areal_unit_column => length)
+	D_b = by(D[D[group_column].==group_b, :], areal_unit_column, N_b = areal_unit_column => length)
+	Dt = join(D_a, D_b, on=areal_unit_column, kind=:outer)
+	Dt[ismissing.(Dt.N_a), :N_a] = 0
+	Dt[ismissing.(Dt.N_b), :N_b] = 0
+	Dt[:A] =size(D[D[group_column].==group_a, :])[1]
+	Dt[:B] =size(D[D[group_column].==group_b, :])[1]
+	Dt[:diff] = abs.((Dt.N_a ./ Dt.A) .- (Dt.N_b ./ Dt.B))
+	return .5*sum(Dt.diff)
+end
+
+export sprox
+
+function sprox(D::DataFrame; group_column::Symbol, group_a, group_b, areal_unit_column::Symbol, X_column::Symbol, Y_column::Symbol, f::Function=negative_exponential)
+	@assert group_column ∈ names(D)
+	@assert areal_unit_column ∈ names(D)
+	@assert X_column ∈ names(D)
+	@assert Y_column ∈ names(D)
+	@assert size(D[ D[group_column] .== group_a, :],1) > 0
+	@assert size(D[ D[group_column] .== group_b, :],1) > 0
+	D_a = by(D[D[group_column].==group_a, :], areal_unit_column, N_a = areal_unit_column => length, centX = X_column => first, centY = Y_column => first)
+	D_b = by(D[D[group_column].==group_b, :], areal_unit_column, N_b = areal_unit_column => length, centX = X_column => first, centY = Y_column => first)
+	Dt = join(D_a, D_b, on=[areal_unit_column, :centX, :centY], kind=:outer)
+	Dt[ismissing.(Dt.N_a), :N_a] = 0
+	Dt[ismissing.(Dt.N_b), :N_b] = 0
+	A = sum(Dt.N_a)
+	B = sum(Dt.N_b)
+	T = A + B
+	s_a = Float64(0)
+	c_a = Float64(0)
+	s_b = Float64(0)
+	c_b = Float64(0)
+	s_t = Float64(0)
+	c_t = Float64(0)
+	@showprogress 1 "Computing SP..." for i in 1:size(Dt)[1], j in 1:size(Dt)[1]
+		this_distance = f(sqrt((Dt[i, :centX]-Dt[j, :centX])^2 + (Dt[i, :centY]-Dt[j, :centY])^2))
+		this_aa = (Dt[i, :N_a]^2) * this_distance/(A^2)
+		this_bb = (Dt[i, :N_b]^2) * this_distance/(B^2)
+		this_tt = ((Dt[i, :N_a] + Dt[i, :N_b])^2) * this_distance/(T^2)
+
+		t_a = s_a + this_aa
+	    if ( abs(s_a) >= abs(this_aa) )
+	        c_a += ( (s_a-t_a) + this_aa )
+	    else
+	        c_a += ( (this_aa-t_a) + s_a )
+	    end
+	    s_a = t_a
+
+		t_b = s_b + this_bb
+	    if ( abs(s_b) >= abs(this_bb) )
+	        c_b += ( (s_b-t_b) + this_bb )
+	    else
+	        c_b += ( (this_bb-t_b) + s_b )
+	    end
+	    s_b = t_b
+
+		t_t = s_t + this_tt
+	    if ( abs(s_t) >= abs(this_tt) )
+	        c_t += ( (s_t-t_t) + this_tt )
+	    else
+	        c_t += ( (this_tt-t_t) + s_t )
+	    end
+	    s_t = t_t
+	end
+
+	Paa = s_a + c_a
+	Pbb = s_b + c_b
+	Ptt = s_t + c_t
+
+	return (A*Paa + B*Pbb)/(T*Ptt)
+
+end
+
 
 end # module
