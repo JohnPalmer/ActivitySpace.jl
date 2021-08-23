@@ -418,6 +418,9 @@ Convenience function that calculates the difference between the mean of the empi
 
 * `group_column`
 * `group_a`
+
+## Examples
+
 """
 function check_bias(D; group_column::Symbol, group_a, group_b, X_column::Symbol, Y_column::Symbol, time_column::Symbol, ID_column::Symbol=:ID, nreps::Int=500, sample_size::Int=100, pop_STP::Union{Number, Nothing}=nothing, f::Function=negative_exponential, time_approach=1, full_output::Bool=false, calculate_moments::Bool=true)
 	@assert group_column ∈ names(D)
